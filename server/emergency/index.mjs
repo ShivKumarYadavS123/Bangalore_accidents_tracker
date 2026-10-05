@@ -4,14 +4,15 @@
  * Public (hospital directory):
  *   GET  /api/hospitals?q=&level=&offset=&limit=     searchable directory (+ capability stats)
  *   GET  /api/hospitals/near?lat=&lng=&limit=&eta=1&emergency=1   nearest, optionally by drive time
- * Reporter (SOS) — the tracking token returned on creation is the credential:
+ * Reporter (SOS) — the tracking token returned on creation is the credential.
+ * A report merged into an existing alert gets a view-only token (GET routes only):
  *   POST  /api/emergency                              raise an SOS {lat,lng,triage,note,reporter_phone,...}
  *   GET   /api/emergency/:id?token=                   tracking view
  *   GET   /api/emergency/:id/stream?token=            live updates (SSE)
  *   GET   /api/emergency/:id/route?token=             ambulance/hospital → scene route
- *   PATCH /api/emergency/:id?token=                   add triage / note / callback number
- *   POST  /api/emergency/:id/photo?token=             scene photo (raw image body)
- *   POST  /api/emergency/:id/cancel?token=            cancel (false alarm, patient already taken…)
+ *   PATCH /api/emergency/:id?token=                   add triage / note / callback number (first reporter only)
+ *   POST  /api/emergency/:id/photo?token=             scene photo, raw image body (first reporter only)
+ *   POST  /api/emergency/:id/cancel?token=            cancel: false alarm, patient already taken… (first reporter only)
  * Hospital responders (Supabase login, app_metadata.role = hospital | admin):
  *   GET   /api/hospital/me                            role + linked hospital
  *   PATCH /api/hospital/me/status                     ER status: accepting | busy | diverting | unknown
@@ -182,10 +183,15 @@ export function createEmergencyFeatures({
     }
   };
 
-  async function withTrackToken(req) {
+  /** Resolves a tracking token to { alert, role }; pass { owner: true } for actions that change the alert. */
+  async function withTrackToken(req, { owner = false } = {}) {
     const alert = await service.getAlert(req.params.id);
-    if (!service.trackAllowed(alert, String(req.query.token || req.get('x-track-token') || ''))) throw new HttpError(404, 'Alert not found');
-    return alert;
+    const role = service.trackRole(alert, String(req.query.token || req.get('x-track-token') || ''));
+    if (!role) throw new HttpError(404, 'Alert not found');
+    if (owner && role !== 'owner') {
+      throw new HttpError(403, 'This tracking link is view-only. Only the person who sent the first SOS can update or cancel it.', { code: 'view_only' });
+    }
+    return { alert, role };
   }
   async function withCrewToken(req) {
     const alert = await service.getAlert(req.params.id);
@@ -278,33 +284,35 @@ export function createEmergencyFeatures({
     }));
 
     app.get('/api/emergency/:id', L.read, wrap(async (req, res) => {
-      res.json(await service.publicView(await withTrackToken(req)));
+      const { alert, role } = await withTrackToken(req);
+      res.json(await service.publicView(alert, { role }));
     }));
 
     app.get('/api/emergency/:id/stream', L.read, wrap(async (req, res) => {
-      const alert = await withTrackToken(req);
-      streamAlert(req, res, alert, a => service.publicView(a));
+      const { alert, role } = await withTrackToken(req);
+      streamAlert(req, res, alert, a => service.publicView(a, { role }));
     }));
 
     app.get('/api/emergency/:id/route', L.read, wrap(async (req, res) => {
-      res.json(await routeFor(await withTrackToken(req)) || { kind: null });
+      const { alert } = await withTrackToken(req);
+      res.json(await routeFor(alert) || { kind: null });
     }));
 
     app.patch('/api/emergency/:id', L.write, wrap(async (req, res) => {
-      const alert = await withTrackToken(req);
+      const { alert } = await withTrackToken(req, { owner: true });
       await service.updateReport(alert.id, req.body || {});
-      res.json(await service.publicView(await service.getAlert(alert.id)));
+      res.json(await service.publicView(await service.getAlert(alert.id), { role: 'owner' }));
     }));
 
     app.post('/api/emergency/:id/photo', L.photo, express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '8mb' }), wrap(async (req, res) => {
-      const alert = await withTrackToken(req);
+      const { alert } = await withTrackToken(req, { owner: true });
       res.json(await service.addPhoto(alert.id, req.body, String(req.headers['content-type'] || '').split(';')[0].trim()));
     }));
 
     app.post('/api/emergency/:id/cancel', L.write, wrap(async (req, res) => {
-      const alert = await withTrackToken(req);
+      const { alert } = await withTrackToken(req, { owner: true });
       await service.cancelAlert(alert.id, { kind: 'reporter' }, req.body?.reason);
-      res.json(await service.publicView(await service.getAlert(alert.id)));
+      res.json(await service.publicView(await service.getAlert(alert.id), { role: 'owner' }));
     }));
 
     // ── Hospital responders ────────────────────────────────────────────────

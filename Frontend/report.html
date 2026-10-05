@@ -187,6 +187,7 @@
 <script type="module" src="js/supabase-auth.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/page-effects.js"></script>
+<script src="js/report-submit.js"></script>
 <script>
   window.Auth.updateNavAuth();
 
@@ -544,31 +545,67 @@
     });
 
     // ── Form Submit via API (Req 7.1, 7.3) ──
+    // A live crash raises the SOS first, on its own; the report is saved afterwards
+    // whatever happened to the SOS (order lives in js/report-submit.js).
+    let sentSos = null; // SOS already raised from this form, so a retry never alerts hospitals twice
+
+    // Alert nearby hospitals. Works without a session: anonymous SOS is allowed.
+    async function raiseSos(reportData, session) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (session && session.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const res = await fetch(`${window.BAT_CONFIG.apiBase}/api/emergency`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ lat: reportData.latitude, lng: reportData.longitude, severity: reportData.severity, note: reportData.description, address: [reportData.location, reportData.area].filter(Boolean).join(', '), source: 'report' })
+      });
+      const sos = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(sos.error || 'SOS failed');
+      // Merged into an alert this device raised itself: keep that alert's full-access link.
+      let prev = null;
+      try { prev = JSON.parse(localStorage.getItem('bat.lastSos') || 'null'); } catch (_) {}
+      if (sos.merged && prev && prev.id === sos.alertId) {
+        return { ...sos, trackUrl: `track.html?id=${encodeURIComponent(prev.id)}&t=${encodeURIComponent(prev.t)}` };
+      }
+      try { localStorage.setItem('bat.lastSos', JSON.stringify({ id: sos.alertId, t: sos.trackToken, at: Date.now() })); } catch (_) {}
+      return sos.merged ? { ...sos, trackUrl: `${sos.trackUrl}&merged=1` } : sos;
+    }
+
+    // Proof upload, then POST /api/reports. Resolves { signedOut: true } or { response } (null when offline).
+    async function saveReport(reportData, session) {
+      if (!session || !session.access_token) return { signedOut: true };
+      const proofFile = fileInput.files[0];
+      if (proofFile) {
+        if (!window.supabase) throw new Error('Supabase Storage is unavailable.');
+        const objectPath = `${session.user.id}/${crypto.randomUUID()}-${proofFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const upload = await window.supabase.storage.from('report-proofs').upload(objectPath, proofFile, { contentType: proofFile.type, upsert: false });
+        if (upload.error) throw upload.error;
+        reportData.proof_url = window.supabase.storage.from('report-proofs').getPublicUrl(objectPath).data.publicUrl;
+      }
+      try {
+        const response = await fetch(`${window.BAT_CONFIG.apiBase}/api/reports`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify(reportData)
+        });
+        return { response };
+      } catch (_) {
+        return { response: null };
+      }
+    }
+
     document.getElementById('report-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const btn = document.getElementById('submit-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Submitting...';
+      const resetButton = () => { btn.disabled = false; btn.innerHTML = ' Submit Accident Report'; };
+      const link = 'style="color:inherit;font-weight:700;"';
+      let sosNote = '';
 
       try {
-        // Get current Supabase session for JWT
-        const session = await window.SupabaseAuthClient.getSession();
-        if (!session || !session.access_token) {
-          // User session expired or invalid — redirect to login
-          window.location.href = 'login.html?returnTo=report.html';
-          return;
-        }
-
-        let proofUrl = null;
-        const proofFile = fileInput.files[0];
-        if (proofFile) {
-          if (!window.supabase) throw new Error('Supabase Storage is unavailable.');
-          const objectPath = `${session.user.id}/${crypto.randomUUID()}-${proofFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-          const upload = await window.supabase.storage.from('report-proofs').upload(objectPath, proofFile, { contentType: proofFile.type, upsert: false });
-          if (upload.error) throw upload.error;
-          proofUrl = window.supabase.storage.from('report-proofs').getPublicUrl(objectPath).data.publicUrl;
-        }
-
         const reportData = {
           latitude: parseFloat(selectedLat),
           longitude: parseFloat(selectedLng),
@@ -578,61 +615,80 @@
           date: document.getElementById('field-date').value,
           time: document.getElementById('field-time').value,
           description: document.getElementById('field-description').value,
-          proof_url: proofUrl
+          proof_url: null
         };
 
-        const apiBase = window.BAT_CONFIG.apiBase;
-        let response;
-        try {
-          response = await fetch(`${apiBase}/api/reports`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          },
-            body: JSON.stringify(reportData)
-          });
-        } catch (_) {
-          response = null;
-        }
+        // Get current Supabase session for JWT (the SOS goes out even without one)
+        let session = null;
+        try { session = await window.SupabaseAuthClient.getSession(); } catch (_) {}
 
-        if (response && response.status === 201) {
-          // Success — report created
-          const data = await response.json();
+        const { sos, sosError, report, reportError } = await window.ReportSubmit.submit({
+          live: document.getElementById('field-live').checked && !sentSos,
+          sendSos: () => raiseSos(reportData, session),
+          saveReport: () => saveReport(reportData, session)
+        });
+        if (sos) sentSos = sos;
+
+        // How the SOS went, added to the report messages below. While it failed,
+        // the page never navigates away on its own, so "call 108" stays visible.
+        sosNote = sentSos
+          ? ` Nearby hospitals have been alerted — <a href="${escapeHtml(sentSos.trackUrl)}" ${link}>open live tracking</a>.`
+          : sosError
+            ? ` Hospitals could not be alerted (${escapeHtml(sosError.message)}). <a href="emergency.html" ${link}>Send an SOS</a> or call <a href="tel:108" ${link}>108</a>.`
+            : '';
+        const openTracking = () => { setTimeout(() => { window.location.href = sentSos.trackUrl; }, 1200); };
+        const markSent = () => {
           document.getElementById('step5').classList.add('done');
           document.getElementById('step5').querySelector('.step-circle').textContent = '';
-          if (document.getElementById('field-live').checked) {
-            // Live crash: also dispatch to hospitals and switch to live tracking.
-            try {
-              const sosRes = await fetch(`${apiBase}/api/emergency`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                body: JSON.stringify({ lat: reportData.latitude, lng: reportData.longitude, severity: reportData.severity, note: reportData.description, address: `${reportData.location}, ${reportData.area}`, source: 'report', report_id: data.id })
-              });
-              const sos = await sosRes.json();
-              if (!sosRes.ok) throw new Error(sos.error || 'SOS failed');
-              try { localStorage.setItem('bat.lastSos', JSON.stringify({ id: sos.alertId, t: sos.trackToken, at: Date.now() })); } catch (_) {}
-              showAlert('success', ` Report saved and nearby hospitals alerted. Opening live tracking…`);
-              setTimeout(() => { window.location.href = sos.trackUrl; }, 1200);
-            } catch (sosErr) {
-              showAlert('error', ` Your report was saved, but hospitals could not be alerted (${sosErr.message}). <a href="emergency.html" style="color:inherit;font-weight:700;">Send an SOS</a> or call <a href="tel:108" style="color:inherit;font-weight:700;">108</a>.`);
-            }
+        };
+
+        if (reportError) {
+          // Network error or proof upload failure
+          showAlert('error', ' Unable to submit report. Please check your connection and try again.' + sosNote);
+          resetButton();
+          return;
+        }
+
+        if (report.signedOut) {
+          if (sentSos || sosError) {
+            showAlert('error', ' Your session has expired, so the report was not saved.' + sosNote);
+            resetButton();
             return;
           }
-          showAlert('success', ` Report submitted successfully! It will appear on the map after verification. <a href="profile.html" style="color:inherit;font-weight:700;">View in your profile →</a>`);
-          setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
+          // User session expired or invalid — redirect to login
+          window.location.href = 'login.html?returnTo=report.html';
+          return;
+        }
+
+        const response = report.response;
+        if (response && response.status === 201) {
+          // Success — report created
+          markSent();
+          if (sentSos) {
+            showAlert('success', ' Report saved and nearby hospitals alerted. Opening live tracking…');
+            openTracking();
+          } else if (sosError) {
+            showAlert('error', ' Your report was saved.' + sosNote);
+          } else {
+            showAlert('success', ` Report submitted successfully! It will appear on the map after verification. <a href="profile.html" ${link}>View in your profile →</a>`);
+            setTimeout(() => { window.location.href = 'profile.html'; }, 2500);
+          }
         } else if (response && (response.status === 400 || response.status === 422)) {
           // Validation errors from server
           const errorData = await response.json().catch(() => ({}));
           const errorMsg = errorData.errors
             ? errorData.errors.join(', ')
             : (errorData.error || 'Invalid report data. Please check your inputs.');
-          showAlert('error', ' ' + errorMsg);
-          btn.disabled = false;
-          btn.innerHTML = ' Submit Accident Report';
+          showAlert('error', ' ' + errorMsg + sosNote);
+          resetButton();
         } else if (response && (response.status === 401 || response.status === 403)) {
           const errorData = await response.json().catch(() => ({}));
           const errorMsg = errorData.error || 'Your session is invalid or expired.';
+          if (sentSos || sosError) {
+            showAlert('error', ' ' + errorMsg + ' The report was not saved.' + sosNote);
+            resetButton();
+            return;
+          }
           showAlert('error', ' ' + errorMsg + ' Please log in again and retry.');
           setTimeout(() => {
             window.location.href = 'login.html?returnTo=report.html';
@@ -644,28 +700,31 @@
             ? window.DB.addAccident({ ...reportData, reportedBy: session.user.id, status: 'pending' })
             : null;
           if (!localResult || !localResult.success) {
-            showAlert('error', ' Unable to save your report. Please try again.');
-            btn.disabled = false;
-            btn.innerHTML = ' Submit Accident Report';
+            showAlert('error', ' Unable to save your report. Please try again.' + sosNote);
+            resetButton();
             return;
           }
-          document.getElementById('step5').classList.add('done');
-          document.getElementById('step5').querySelector('.step-circle').textContent = '';
-          showAlert('success', ' Report saved successfully! You can view it in your profile.');
-          setTimeout(() => { window.location.href = 'profile.html'; }, 1200);
+          markSent();
+          if (sentSos) {
+            showAlert('success', ' Report saved on this device and nearby hospitals alerted. Opening live tracking…');
+            openTracking();
+          } else if (sosError) {
+            showAlert('error', ' Report saved on this device.' + sosNote);
+          } else {
+            showAlert('success', ' Report saved successfully! You can view it in your profile.');
+            setTimeout(() => { window.location.href = 'profile.html'; }, 1200);
+          }
         } else {
           // Server error (500 or other) — do not masquerade as a successful offline save.
           const errorData = await response.json().catch(() => ({}));
           const detail = errorData?.error || 'An unexpected error occurred. Please try again later.';
-          showAlert('error', ' ' + detail);
-          btn.disabled = false;
-          btn.innerHTML = ' Submit Accident Report';
+          showAlert('error', ' ' + detail + sosNote);
+          resetButton();
         }
       } catch (err) {
         // Network error or fetch failure
-        showAlert('error', ' Unable to submit report. Please check your connection and try again.');
-        btn.disabled = false;
-        btn.innerHTML = ' Submit Accident Report';
+        showAlert('error', ' Unable to submit report. Please check your connection and try again.' + sosNote);
+        resetButton();
       }
     });
 

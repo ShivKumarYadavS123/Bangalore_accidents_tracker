@@ -12,7 +12,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "2",
@@ -27,7 +28,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "3",
@@ -42,7 +44,8 @@
     "date": null,
     "lat": 13.019546700132366,
     "lng": 77.5967251243236,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "4",
@@ -57,7 +60,8 @@
     "date": null,
     "lat": 12.88,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "5",
@@ -72,7 +76,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "6",
@@ -87,7 +92,8 @@
     "date": null,
     "lat": 13.020718099934683,
     "lng": 77.59240773828049,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "7",
@@ -102,7 +108,8 @@
     "date": null,
     "lat": 12.991652,
     "lng": 77.5951488,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "8",
@@ -117,7 +124,8 @@
     "date": null,
     "lat": 12.991652,
     "lng": 77.5951488,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "9",
@@ -132,7 +140,8 @@
     "date": "2015-01-28",
     "lat": 13.2,
     "lng": 77.5,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "10",
@@ -147,7 +156,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "11",
@@ -162,7 +172,8 @@
     "date": null,
     "lat": 12.71,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "12",
@@ -177,7 +188,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "13",
@@ -192,7 +204,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.595,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "14",
@@ -207,7 +220,8 @@
     "date": null,
     "lat": 13.019932660685313,
     "lng": 77.59563968893895,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "15",
@@ -222,7 +236,8 @@
     "date": "2015-05-09",
     "lat": 13.14,
     "lng": 77.61,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "16",
@@ -237,7 +252,8 @@
     "date": "2015-05-15",
     "lat": 13.014389782110484,
     "lng": 77.70032926840844,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "17",
@@ -252,7 +268,8 @@
     "date": null,
     "lat": 12.81,
     "lng": 77.69,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "18",
@@ -267,7 +284,8 @@
     "date": null,
     "lat": 12.991230403559115,
     "lng": 77.7560322338677,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "19",
@@ -282,7 +300,8 @@
     "date": "2015-09-25",
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "20",
@@ -297,7 +316,8 @@
     "date": null,
     "lat": 12.996853572496391,
     "lng": 77.57152943199566,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "21",
@@ -312,7 +332,8 @@
     "date": null,
     "lat": 12.905364974279522,
     "lng": 77.56280468962689,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "23",
@@ -327,7 +348,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "24",
@@ -342,7 +364,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "25",
@@ -357,7 +380,8 @@
     "date": "2016-01-29",
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "26",
@@ -372,7 +396,8 @@
     "date": null,
     "lat": 12.973616142328751,
     "lng": 77.61390823195774,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "27",
@@ -387,7 +412,8 @@
     "date": null,
     "lat": 12.980308642929316,
     "lng": 77.60983879270168,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "28",
@@ -402,7 +428,8 @@
     "date": null,
     "lat": 13.088632508157971,
     "lng": 77.40541818890972,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "29",
@@ -417,7 +444,8 @@
     "date": "2018-02-16",
     "lat": 13.0206,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "30",
@@ -432,7 +460,8 @@
     "date": "2016-02-19",
     "lat": 13.123695246003336,
     "lng": 77.39594437456634,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "32",
@@ -447,7 +476,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.61,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "33",
@@ -462,7 +492,8 @@
     "date": "2016-03-28",
     "lat": 12.949439419777192,
     "lng": 77.59733415165897,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "34",
@@ -477,7 +508,8 @@
     "date": "2016-03-31",
     "lat": 12.853619557055865,
     "lng": 77.59969767377095,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "35",
@@ -492,7 +524,8 @@
     "date": "2016-04-15",
     "lat": 13.04,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "36",
@@ -507,7 +540,8 @@
     "date": "2016-05-17",
     "lat": 12.985,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "37",
@@ -522,7 +556,8 @@
     "date": null,
     "lat": 13.021218203619355,
     "lng": 77.5938033166845,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "39",
@@ -537,7 +572,8 @@
     "date": "2025-06-16",
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "40",
@@ -552,7 +588,8 @@
     "date": "2016-07-05",
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "41",
@@ -567,7 +604,8 @@
     "date": "2016-09-01",
     "lat": 12.963646755851087,
     "lng": 77.74819750386587,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "42",
@@ -582,7 +620,8 @@
     "date": "2016-09-03",
     "lat": 13,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "43",
@@ -597,7 +636,8 @@
     "date": "2020-09-16",
     "lat": 13.025101297961555,
     "lng": 77.59234107677014,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "44",
@@ -612,7 +652,8 @@
     "date": null,
     "lat": 12.961,
     "lng": 77.6387,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "45",
@@ -627,7 +668,8 @@
     "date": "2016-11-23",
     "lat": 13.03,
     "lng": 77.57,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "46",
@@ -642,7 +684,8 @@
     "date": "2016-12-26",
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "47",
@@ -657,7 +700,8 @@
     "date": "2016-12-26",
     "lat": 12.901256799044617,
     "lng": 77.63246986777341,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "48",
@@ -672,7 +716,8 @@
     "date": null,
     "lat": 13.023418189450922,
     "lng": 77.59446985180011,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "49",
@@ -687,7 +732,8 @@
     "date": null,
     "lat": 13,
     "lng": 77.5,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "50",
@@ -702,7 +748,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.48,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "51",
@@ -717,7 +764,8 @@
     "date": null,
     "lat": 13.017070768691042,
     "lng": 77.59809138573041,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "53",
@@ -732,7 +780,8 @@
     "date": null,
     "lat": 12.966,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "55",
@@ -747,7 +796,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "56",
@@ -762,7 +812,8 @@
     "date": "2017-05-11",
     "lat": 12.96,
     "lng": 77.58,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "57",
@@ -777,7 +828,8 @@
     "date": null,
     "lat": 12.9757663356486,
     "lng": 77.60489556558008,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "58",
@@ -792,7 +844,8 @@
     "date": null,
     "lat": 13.023047108874877,
     "lng": 77.59433382422407,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "59",
@@ -807,7 +860,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "60",
@@ -822,7 +876,8 @@
     "date": null,
     "lat": 13.0200969918926,
     "lng": 77.55282778997417,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "62",
@@ -837,7 +892,8 @@
     "date": "2017-09-17",
     "lat": 12.91103160416668,
     "lng": 77.63803640917348,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "63",
@@ -852,7 +908,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.63,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "64",
@@ -867,7 +924,8 @@
     "date": null,
     "lat": 12.91223616461528,
     "lng": 77.63807977081507,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "65",
@@ -882,7 +940,8 @@
     "date": null,
     "lat": 12.948509722759155,
     "lng": 77.5968571736027,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "66",
@@ -897,7 +956,8 @@
     "date": "2018-09-17",
     "lat": 12.845,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "67",
@@ -912,7 +972,8 @@
     "date": null,
     "lat": 12.9568,
     "lng": 77.5233,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "68",
@@ -927,7 +988,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "69",
@@ -942,7 +1004,8 @@
     "date": null,
     "lat": 12.9422,
     "lng": 77.5755,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "70",
@@ -957,7 +1020,8 @@
     "date": null,
     "lat": 12.8,
     "lng": 77.4,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "71",
@@ -972,7 +1036,8 @@
     "date": null,
     "lat": 13.224635138174051,
     "lng": 77.68539918755891,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "72",
@@ -987,7 +1052,8 @@
     "date": null,
     "lat": 12.912129677601712,
     "lng": 77.63954819156294,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "73",
@@ -1002,7 +1068,8 @@
     "date": null,
     "lat": 12.9165,
     "lng": 77.6353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "74",
@@ -1017,7 +1084,8 @@
     "date": null,
     "lat": 13.021945156527096,
     "lng": 77.59396705148441,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "75",
@@ -1032,7 +1100,8 @@
     "date": null,
     "lat": 12.55,
     "lng": 77.42,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "76",
@@ -1047,7 +1116,8 @@
     "date": null,
     "lat": 12.844226828843574,
     "lng": 77.67373019729399,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "77",
@@ -1062,7 +1132,8 @@
     "date": "2018-01-08",
     "lat": 12.975639572394158,
     "lng": 77.6060012874363,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "78",
@@ -1077,7 +1148,8 @@
     "date": "2018-01-11",
     "lat": 13.119797335341914,
     "lng": 77.57874550421292,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "79",
@@ -1092,7 +1164,8 @@
     "date": "2014-01-18",
     "lat": 13.043410955271796,
     "lng": 77.59029596181188,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "80",
@@ -1107,7 +1180,8 @@
     "date": null,
     "lat": 12.996187863649098,
     "lng": 77.7601903242745,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "81",
@@ -1122,7 +1196,8 @@
     "date": "2018-03-14",
     "lat": 12.853619557055865,
     "lng": 77.60330690719161,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "82",
@@ -1137,7 +1212,8 @@
     "date": "2018-03-24",
     "lat": 12.9,
     "lng": 77.62,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "83",
@@ -1152,7 +1228,8 @@
     "date": null,
     "lat": 12.90559333627587,
     "lng": 77.60669382203264,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "84",
@@ -1167,7 +1244,8 @@
     "date": null,
     "lat": 13.024396939527222,
     "lng": 77.59294684467653,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "85",
@@ -1182,7 +1260,8 @@
     "date": "2018-05-06",
     "lat": 12.99,
     "lng": 77.76,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "86",
@@ -1197,7 +1276,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "87",
@@ -1212,7 +1292,8 @@
     "date": "2018-07-07",
     "lat": 12.977589467982924,
     "lng": 77.59033877037689,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "88",
@@ -1227,7 +1308,8 @@
     "date": null,
     "lat": 13.004078058621303,
     "lng": 77.75689359665876,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "89",
@@ -1242,7 +1324,8 @@
     "date": null,
     "lat": 12.9422,
     "lng": 77.5755,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "90",
@@ -1257,7 +1340,8 @@
     "date": null,
     "lat": 13.246042505461617,
     "lng": 77.70523688862471,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "91",
@@ -1272,7 +1356,8 @@
     "date": null,
     "lat": 13.065504130018155,
     "lng": 77.59339861474746,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "92",
@@ -1287,7 +1372,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "93",
@@ -1302,7 +1388,8 @@
     "date": "2018-08-06",
     "lat": 12.963382679394243,
     "lng": 77.58177560816046,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "94",
@@ -1317,7 +1404,8 @@
     "date": null,
     "lat": 13.090478039912355,
     "lng": 77.37851255617386,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "95",
@@ -1332,7 +1420,8 @@
     "date": null,
     "lat": 12.8031179766282,
     "lng": 77.70423161882604,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "96",
@@ -1347,7 +1436,8 @@
     "date": "2018-09-06",
     "lat": 13.042818720443577,
     "lng": 77.60184641941089,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "97",
@@ -1362,7 +1452,8 @@
     "date": null,
     "lat": 12.886664235319444,
     "lng": 77.45120183289845,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "98",
@@ -1377,7 +1468,8 @@
     "date": "2013-09-18",
     "lat": 12.97,
     "lng": 77.71,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "99",
@@ -1392,7 +1484,8 @@
     "date": null,
     "lat": 12.995929617665738,
     "lng": 77.76171427382718,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "100",
@@ -1407,7 +1500,8 @@
     "date": null,
     "lat": 13.024145135904902,
     "lng": 77.59414388733137,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "101",
@@ -1422,7 +1516,8 @@
     "date": "2018-10-14",
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "102",
@@ -1437,7 +1532,8 @@
     "date": null,
     "lat": 13.02419814721533,
     "lng": 77.59742215187481,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "103",
@@ -1452,7 +1548,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "104",
@@ -1467,7 +1564,8 @@
     "date": null,
     "lat": 13.02298101568907,
     "lng": 77.59262634010634,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "105",
@@ -1482,7 +1580,8 @@
     "date": "2025-10-18",
     "lat": 13.234345929653614,
     "lng": 77.69503464236203,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "106",
@@ -1497,7 +1596,8 @@
     "date": "2018-10-31",
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "107",
@@ -1512,7 +1612,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "108",
@@ -1527,7 +1628,8 @@
     "date": null,
     "lat": 13.024396939527222,
     "lng": 77.59599386234294,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "109",
@@ -1542,7 +1644,8 @@
     "date": null,
     "lat": 12.9568,
     "lng": 77.5233,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "111",
@@ -1557,7 +1660,8 @@
     "date": null,
     "lat": 12.917,
     "lng": 77.623,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "112",
@@ -1572,7 +1676,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "113",
@@ -1587,7 +1692,8 @@
     "date": null,
     "lat": 13.085894222206022,
     "lng": 77.59496064854869,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "114",
@@ -1602,7 +1708,8 @@
     "date": null,
     "lat": 13.073666766493474,
     "lng": 77.59266521803016,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "115",
@@ -1617,7 +1724,8 @@
     "date": null,
     "lat": 13.10056636837858,
     "lng": 77.59962324178758,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "116",
@@ -1632,7 +1740,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.59,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "117",
@@ -1647,7 +1756,8 @@
     "date": null,
     "lat": 13.022563871359296,
     "lng": 77.59424456889809,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "118",
@@ -1662,7 +1772,8 @@
     "date": null,
     "lat": 13.0761821783356,
     "lng": 77.59266521803016,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "119",
@@ -1677,7 +1788,8 @@
     "date": null,
     "lat": 13.140302166263027,
     "lng": 77.34933320799593,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "120",
@@ -1692,7 +1804,8 @@
     "date": null,
     "lat": 12.999286794492093,
     "lng": 77.75787127060357,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "121",
@@ -1707,7 +1820,8 @@
     "date": null,
     "lat": 13.06187180607212,
     "lng": 77.58716874324153,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "122",
@@ -1722,7 +1836,8 @@
     "date": null,
     "lat": 13.066301462269081,
     "lng": 77.58134813336778,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "123",
@@ -1737,7 +1852,8 @@
     "date": "2019-03-27",
     "lat": 13.025035034063748,
     "lng": 77.59166093889775,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "124",
@@ -1752,7 +1868,8 @@
     "date": null,
     "lat": 13.023948882046625,
     "lng": 77.6445983039934,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "125",
@@ -1767,7 +1884,8 @@
     "date": null,
     "lat": 12.98,
     "lng": 77.54,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "126",
@@ -1782,7 +1900,8 @@
     "date": null,
     "lat": 13.068693443567795,
     "lng": 77.58416749127633,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "127",
@@ -1797,7 +1916,8 @@
     "date": null,
     "lat": 12.55,
     "lng": 77.42,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "128",
@@ -1812,7 +1932,8 @@
     "date": null,
     "lat": 13.015550830805722,
     "lng": 77.55560269504343,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "129",
@@ -1827,7 +1948,8 @@
     "date": null,
     "lat": 13.024650703097905,
     "lng": 77.59466029040243,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "130",
@@ -1842,7 +1964,8 @@
     "date": "2019-04-19",
     "lat": 12.88,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "132",
@@ -1857,7 +1980,8 @@
     "date": null,
     "lat": 13.02245146778094,
     "lng": 77.6475624145516,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "134",
@@ -1872,7 +1996,8 @@
     "date": null,
     "lat": 13.1045782,
     "lng": 77.6004842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "135",
@@ -1887,7 +2012,8 @@
     "date": "2019-05-28",
     "lat": 13.1045782,
     "lng": 77.6004842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "136",
@@ -1902,7 +2028,8 @@
     "date": null,
     "lat": 13.1045782,
     "lng": 77.6004842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "137",
@@ -1917,7 +2044,8 @@
     "date": null,
     "lat": 13.107087203446568,
     "lng": 77.38002836646945,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "138",
@@ -1932,7 +2060,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "139",
@@ -1947,7 +2076,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "140",
@@ -1962,7 +2092,8 @@
     "date": null,
     "lat": 12.988120069223228,
     "lng": 77.59414449576627,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "141",
@@ -1977,7 +2108,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "142",
@@ -1992,7 +2124,8 @@
     "date": null,
     "lat": 13.024871200062321,
     "lng": 77.59289959238708,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "143",
@@ -2007,7 +2140,8 @@
     "date": null,
     "lat": 13.239201180264558,
     "lng": 77.70036248207708,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "144",
@@ -2022,7 +2156,8 @@
     "date": null,
     "lat": 12.9763,
     "lng": 77.5929,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "145",
@@ -2037,7 +2172,8 @@
     "date": null,
     "lat": 12.85798579881643,
     "lng": 77.65891678541828,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "146",
@@ -2052,7 +2188,8 @@
     "date": null,
     "lat": 12.847197301761867,
     "lng": 77.67054705126958,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "147",
@@ -2067,7 +2204,8 @@
     "date": null,
     "lat": 13.0295227,
     "lng": 77.5784903,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "148",
@@ -2082,7 +2220,8 @@
     "date": null,
     "lat": 12.97304091144801,
     "lng": 77.62184996737528,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "149",
@@ -2097,7 +2236,8 @@
     "date": null,
     "lat": 12.965131859451859,
     "lng": 77.74866131460362,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "150",
@@ -2112,7 +2252,8 @@
     "date": null,
     "lat": 12.899747153802323,
     "lng": 77.63327586350897,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "151",
@@ -2127,7 +2268,8 @@
     "date": null,
     "lat": 12.95096073468794,
     "lng": 77.59546960107792,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "152",
@@ -2142,7 +2284,8 @@
     "date": null,
     "lat": 12.845423889314674,
     "lng": 77.6637714975883,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "154",
@@ -2157,7 +2300,8 @@
     "date": null,
     "lat": 13.0206,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "156",
@@ -2172,7 +2316,8 @@
     "date": null,
     "lat": 13.105736344937611,
     "lng": 77.6017034756942,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "157",
@@ -2187,7 +2332,8 @@
     "date": null,
     "lat": 13.1031513702318,
     "lng": 77.58506160444125,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "158",
@@ -2202,7 +2348,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "159",
@@ -2217,7 +2364,8 @@
     "date": null,
     "lat": 13.043574867486399,
     "lng": 77.60425346582963,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "160",
@@ -2232,7 +2380,8 @@
     "date": null,
     "lat": 12.89,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "161",
@@ -2247,7 +2396,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "162",
@@ -2262,7 +2412,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "163",
@@ -2277,7 +2428,8 @@
     "date": null,
     "lat": 12.974836736952327,
     "lng": 77.60931845300502,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "164",
@@ -2292,7 +2444,8 @@
     "date": null,
     "lat": 12.9698,
     "lng": 77.75,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "165",
@@ -2307,7 +2460,8 @@
     "date": null,
     "lat": 12.971526605155447,
     "lng": 77.64114339948895,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "166",
@@ -2322,7 +2476,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "167",
@@ -2337,7 +2492,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "168",
@@ -2352,7 +2508,8 @@
     "date": null,
     "lat": 12.932854530350426,
     "lng": 77.62315746283377,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "169",
@@ -2367,7 +2524,8 @@
     "date": "2021-08-31",
     "lat": 12.93858,
     "lng": 77.633933,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "170",
@@ -2382,7 +2540,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "171",
@@ -2397,7 +2556,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "172",
@@ -2412,7 +2572,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "173",
@@ -2427,7 +2588,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "174",
@@ -2442,7 +2604,8 @@
     "date": null,
     "lat": 12.936848227856089,
     "lng": 77.61817087406217,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "175",
@@ -2457,7 +2620,8 @@
     "date": null,
     "lat": 12.936172050765165,
     "lng": 77.62107610403638,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "176",
@@ -2472,7 +2636,8 @@
     "date": null,
     "lat": 12.936024136782208,
     "lng": 77.61567757967998,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "177",
@@ -2487,7 +2652,8 @@
     "date": null,
     "lat": 12.936827097341478,
     "lng": 77.62662639414748,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "178",
@@ -2502,7 +2668,8 @@
     "date": null,
     "lat": 12.931945902415492,
     "lng": 77.62276720806068,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "179",
@@ -2517,7 +2684,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "180",
@@ -2532,7 +2700,8 @@
     "date": null,
     "lat": 12.937228576655556,
     "lng": 77.62697328727893,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "181",
@@ -2547,7 +2716,8 @@
     "date": null,
     "lat": 12.93587622270283,
     "lng": 77.61530900573678,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "182",
@@ -2562,7 +2732,8 @@
     "date": null,
     "lat": 12.935664916735888,
     "lng": 77.62508705587652,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "183",
@@ -2577,7 +2748,8 @@
     "date": null,
     "lat": 12.9375244031052,
     "lng": 77.6273418612306,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "184",
@@ -2592,7 +2764,8 @@
     "date": null,
     "lat": 12.933826547268339,
     "lng": 77.62354771760687,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "185",
@@ -2607,7 +2780,8 @@
     "date": null,
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "186",
@@ -2622,7 +2796,8 @@
     "date": "2021-09-15",
     "lat": 12.876154792620525,
     "lng": 77.64803963808203,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "187",
@@ -2637,7 +2812,8 @@
     "date": null,
     "lat": 12.898551694305823,
     "lng": 77.63431273753417,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "188",
@@ -2652,7 +2828,8 @@
     "date": null,
     "lat": 12.898995502557767,
     "lng": 77.63383575947796,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "189",
@@ -2667,7 +2844,8 @@
     "date": null,
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "190",
@@ -2682,7 +2860,8 @@
     "date": null,
     "lat": 12.974033898917355,
     "lng": 77.61215864051746,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "191",
@@ -2697,7 +2876,8 @@
     "date": null,
     "lat": 12.89,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "192",
@@ -2712,7 +2892,8 @@
     "date": null,
     "lat": 12.94,
     "lng": 77.74,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "193",
@@ -2727,7 +2908,8 @@
     "date": null,
     "lat": 13.079487703686866,
     "lng": 77.59290454821803,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "194",
@@ -2742,7 +2924,8 @@
     "date": null,
     "lat": 12.975628396883124,
     "lng": 77.64093833404792,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "195",
@@ -2757,7 +2940,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "196",
@@ -2772,7 +2956,8 @@
     "date": null,
     "lat": 12.973619579129831,
     "lng": 77.64114339948895,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "197",
@@ -2787,7 +2972,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "198",
@@ -2802,7 +2988,8 @@
     "date": null,
     "lat": 12.84537955385322,
     "lng": 77.66217992457484,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "199",
@@ -2817,7 +3004,8 @@
     "date": null,
     "lat": 12.845468224787155,
     "lng": 77.66731843172892,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "200",
@@ -2832,7 +3020,8 @@
     "date": "2022-01-08",
     "lat": 12.912073306590344,
     "lng": 77.56729100713005,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "201",
@@ -2847,7 +3036,8 @@
     "date": null,
     "lat": 12.852048662952086,
     "lng": 77.59344596587994,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "202",
@@ -2862,7 +3052,8 @@
     "date": null,
     "lat": 12.972336451445273,
     "lng": 77.64120815699636,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "203",
@@ -2877,7 +3068,8 @@
     "date": null,
     "lat": 12.88,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "204",
@@ -2892,7 +3084,8 @@
     "date": "2022-01-13",
     "lat": 12.910432159380349,
     "lng": 77.58728941545354,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "205",
@@ -2907,7 +3100,8 @@
     "date": null,
     "lat": 12.90657876960735,
     "lng": 77.56338845940292,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "206",
@@ -2922,7 +3116,8 @@
     "date": null,
     "lat": 12.9165,
     "lng": 77.6353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "207",
@@ -2937,7 +3132,8 @@
     "date": null,
     "lat": 13.13870459415871,
     "lng": 77.61794361624499,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "208",
@@ -2952,7 +3148,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "209",
@@ -2967,7 +3164,8 @@
     "date": "2022-02-27",
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "210",
@@ -2982,7 +3180,8 @@
     "date": "2022-02-28",
     "lat": 13.072547142458987,
     "lng": 77.58894221030022,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "211",
@@ -2997,7 +3196,8 @@
     "date": null,
     "lat": 12.849912231203405,
     "lng": 77.58848326992648,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "212",
@@ -3012,7 +3212,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.595,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "213",
@@ -3027,7 +3228,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "214",
@@ -3042,7 +3244,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "215",
@@ -3057,7 +3260,8 @@
     "date": null,
     "lat": 12.91049555759507,
     "lng": 77.58583680046581,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "216",
@@ -3072,7 +3276,8 @@
     "date": "2022-03-25",
     "lat": 12.917,
     "lng": 77.623,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "217",
@@ -3087,7 +3292,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "218",
@@ -3102,7 +3308,8 @@
     "date": null,
     "lat": 12.98,
     "lng": 77.62,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "219",
@@ -3117,7 +3324,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "220",
@@ -3132,7 +3340,8 @@
     "date": null,
     "lat": 12.980815686035243,
     "lng": 77.61020736665336,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "221",
@@ -3147,7 +3356,8 @@
     "date": null,
     "lat": 12.96,
     "lng": 77.58,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "222",
@@ -3162,7 +3372,8 @@
     "date": "2022-05-08",
     "lat": 12.8856913,
     "lng": 77.5526564,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "223",
@@ -3177,7 +3388,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "224",
@@ -3192,7 +3404,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "225",
@@ -3207,7 +3420,8 @@
     "date": "2022-05-09",
     "lat": 12.835935920201734,
     "lng": 77.67941438662467,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "226",
@@ -3222,7 +3436,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "227",
@@ -3237,7 +3452,8 @@
     "date": null,
     "lat": 12.901648373984202,
     "lng": 77.55856774250879,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "228",
@@ -3252,7 +3468,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "230",
@@ -3267,7 +3484,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "231",
@@ -3282,7 +3500,8 @@
     "date": null,
     "lat": 13.09763200905958,
     "lng": 77.59173269938287,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "232",
@@ -3297,7 +3516,8 @@
     "date": null,
     "lat": 12.9716,
     "lng": 77.6071,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "233",
@@ -3312,7 +3532,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "234",
@@ -3327,7 +3548,8 @@
     "date": null,
     "lat": 13.131875563194086,
     "lng": 77.57080399989877,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "235",
@@ -3342,7 +3564,8 @@
     "date": null,
     "lat": 12.9165,
     "lng": 77.6353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "236",
@@ -3357,7 +3580,8 @@
     "date": "2022-06-29",
     "lat": 12.9568,
     "lng": 77.5233,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "237",
@@ -3372,7 +3596,8 @@
     "date": null,
     "lat": 12.966,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "239",
@@ -3387,7 +3612,8 @@
     "date": null,
     "lat": 12.966,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "240",
@@ -3402,7 +3628,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.67,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "241",
@@ -3417,7 +3644,8 @@
     "date": null,
     "lat": 12.986549953772212,
     "lng": 77.52038529742651,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "242",
@@ -3432,7 +3660,8 @@
     "date": "2022-07-26",
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "243",
@@ -3447,7 +3676,8 @@
     "date": null,
     "lat": 12.845290882886786,
     "lng": 77.66581780574631,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "244",
@@ -3462,7 +3692,8 @@
     "date": "2022-08-12",
     "lat": 13.01,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "245",
@@ -3477,7 +3708,8 @@
     "date": null,
     "lat": 12.97259938798625,
     "lng": 77.63825089747644,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "246",
@@ -3492,7 +3724,8 @@
     "date": "2022-08-23",
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "247",
@@ -3507,7 +3740,8 @@
     "date": null,
     "lat": 12.904169588388157,
     "lng": 77.56219601426352,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "248",
@@ -3522,7 +3756,8 @@
     "date": null,
     "lat": 13.0258741156577,
     "lng": 77.63943855598336,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "249",
@@ -3537,7 +3772,8 @@
     "date": null,
     "lat": 12.941937213157217,
     "lng": 77.60260135320908,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "250",
@@ -3552,7 +3788,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "251",
@@ -3567,7 +3804,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.48,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "252",
@@ -3582,7 +3820,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "253",
@@ -3597,7 +3836,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.61,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "254",
@@ -3612,7 +3852,8 @@
     "date": "2022-10-10",
     "lat": 13.069845130002633,
     "lng": 77.5929893531038,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "255",
@@ -3627,7 +3868,8 @@
     "date": null,
     "lat": 12.973738115830443,
     "lng": 77.61337276647708,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "256",
@@ -3642,7 +3884,8 @@
     "date": null,
     "lat": 12.945411683833072,
     "lng": 77.60255718727802,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "257",
@@ -3657,7 +3900,8 @@
     "date": null,
     "lat": 12.973378950180802,
     "lng": 77.6148687431064,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "258",
@@ -3672,7 +3916,8 @@
     "date": null,
     "lat": 12.978301587154917,
     "lng": 77.60513405460824,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "259",
@@ -3687,7 +3932,8 @@
     "date": null,
     "lat": 13.02443019185192,
     "lng": 77.64333581245882,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "262",
@@ -3702,7 +3948,8 @@
     "date": "2022-10-17",
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "263",
@@ -3717,7 +3964,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "264",
@@ -3732,7 +3980,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "265",
@@ -3747,7 +3996,8 @@
     "date": null,
     "lat": 13.00185870931874,
     "lng": 77.56926752144483,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "267",
@@ -3762,7 +4012,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "268",
@@ -3777,7 +4028,8 @@
     "date": null,
     "lat": 12.917,
     "lng": 77.623,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "269",
@@ -3792,7 +4044,8 @@
     "date": null,
     "lat": 12.973463459792512,
     "lng": 77.61439176505132,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "270",
@@ -3807,7 +4060,8 @@
     "date": "2022-10-25",
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "272",
@@ -3822,7 +4076,8 @@
     "date": null,
     "lat": 12.909108521946095,
     "lng": 77.6379930475319,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "273",
@@ -3837,7 +4092,8 @@
     "date": null,
     "lat": 12.975116182230138,
     "lng": 77.6078809638002,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "274",
@@ -3852,7 +4108,8 @@
     "date": null,
     "lat": 13.096584015115454,
     "lng": 77.59266521803016,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "275",
@@ -3867,7 +4124,8 @@
     "date": null,
     "lat": 12.9422,
     "lng": 77.5755,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "276",
@@ -3882,7 +4140,8 @@
     "date": null,
     "lat": 13,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "277",
@@ -3897,7 +4156,8 @@
     "date": null,
     "lat": 13.088431062574514,
     "lng": 77.59971910756553,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "278",
@@ -3912,7 +4172,8 @@
     "date": null,
     "lat": 12.963,
     "lng": 77.578,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "279",
@@ -3927,7 +4188,8 @@
     "date": null,
     "lat": 12.969651685457833,
     "lng": 77.74985397077558,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "280",
@@ -3942,7 +4204,8 @@
     "date": null,
     "lat": 12.9568,
     "lng": 77.5233,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "281",
@@ -3957,7 +4220,8 @@
     "date": null,
     "lat": 13.088990011731468,
     "lng": 77.59598903297598,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "282",
@@ -3972,7 +4236,8 @@
     "date": null,
     "lat": 13.242070146493717,
     "lng": 77.70387658912409,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "283",
@@ -3987,7 +4252,8 @@
     "date": "2023-01-07",
     "lat": 13.01,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "284",
@@ -4002,7 +4268,8 @@
     "date": null,
     "lat": 13.042398421752978,
     "lng": 77.59201278703989,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "285",
@@ -4017,7 +4284,8 @@
     "date": null,
     "lat": 12.963,
     "lng": 77.578,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "286",
@@ -4032,7 +4300,8 @@
     "date": null,
     "lat": 13.042665796274207,
     "lng": 77.5910247501862,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "287",
@@ -4047,7 +4316,8 @@
     "date": null,
     "lat": 13.024266371544385,
     "lng": 77.59665989574677,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "288",
@@ -4062,7 +4332,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.53,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "289",
@@ -4077,7 +4348,8 @@
     "date": null,
     "lat": 12.97266061732428,
     "lng": 77.61812086621336,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "290",
@@ -4092,7 +4364,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.71,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "291",
@@ -4107,7 +4380,8 @@
     "date": null,
     "lat": 12.912151634246598,
     "lng": 77.6404429802725,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "292",
@@ -4122,7 +4396,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "293",
@@ -4137,7 +4412,8 @@
     "date": null,
     "lat": 12.946637208045757,
     "lng": 77.60249214481507,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "294",
@@ -4152,7 +4428,8 @@
     "date": null,
     "lat": 12.936982922920649,
     "lng": 77.6017065827794,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "295",
@@ -4167,7 +4444,8 @@
     "date": null,
     "lat": 12.947313356756268,
     "lng": 77.60253550645666,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "296",
@@ -4182,7 +4460,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "297",
@@ -4197,7 +4476,8 @@
     "date": null,
     "lat": 13.101845492319825,
     "lng": 77.6002212329912,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "298",
@@ -4212,7 +4492,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "299",
@@ -4227,7 +4508,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "300",
@@ -4242,7 +4524,8 @@
     "date": null,
     "lat": 13.042826220848355,
     "lng": 77.59036605895136,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "301",
@@ -4257,7 +4540,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "302",
@@ -4272,7 +4556,8 @@
     "date": null,
     "lat": 12.949097865835071,
     "lng": 77.6029265654933,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "303",
@@ -4287,7 +4572,8 @@
     "date": null,
     "lat": 13.042601579724817,
     "lng": 77.59792209973051,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "304",
@@ -4302,7 +4588,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "305",
@@ -4317,7 +4604,8 @@
     "date": null,
     "lat": 12.982,
     "lng": 77.608,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "306",
@@ -4332,7 +4620,8 @@
     "date": null,
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "307",
@@ -4347,7 +4636,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "308",
@@ -4362,7 +4652,8 @@
     "date": null,
     "lat": 12.980716251525408,
     "lng": 77.59758016449285,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "309",
@@ -4377,7 +4668,8 @@
     "date": null,
     "lat": 12.8804001,
     "lng": 77.6491258,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "310",
@@ -4392,7 +4684,8 @@
     "date": null,
     "lat": 12.977,
     "lng": 77.573,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "311",
@@ -4407,7 +4700,8 @@
     "date": null,
     "lat": 13.026569335228018,
     "lng": 77.63493749920804,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "312",
@@ -4422,7 +4716,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "313",
@@ -4437,7 +4732,8 @@
     "date": null,
     "lat": 12.9165,
     "lng": 77.6353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "314",
@@ -4452,7 +4748,8 @@
     "date": null,
     "lat": 13.026248464899723,
     "lng": 77.63790160976777,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "316",
@@ -4467,7 +4764,8 @@
     "date": null,
     "lat": 12.87,
     "lng": 77.63,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "317",
@@ -4482,7 +4780,8 @@
     "date": null,
     "lat": 12.857799960985702,
     "lng": 77.42743723294001,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "318",
@@ -4497,7 +4796,8 @@
     "date": null,
     "lat": 12.862005673342367,
     "lng": 77.65915017975522,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "319",
@@ -4512,7 +4812,8 @@
     "date": null,
     "lat": 12.984233281766535,
     "lng": 77.75270942169891,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "320",
@@ -4527,7 +4828,8 @@
     "date": null,
     "lat": 13.23291140527148,
     "lng": 77.69344762627685,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "321",
@@ -4542,7 +4844,8 @@
     "date": null,
     "lat": 13.02228918271949,
     "lng": 77.55195845372981,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "322",
@@ -4557,7 +4860,8 @@
     "date": null,
     "lat": 12.9165,
     "lng": 77.6353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "323",
@@ -4572,7 +4876,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "324",
@@ -4587,7 +4892,8 @@
     "date": "2023-09-18",
     "lat": 12.71,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "325",
@@ -4602,7 +4908,8 @@
     "date": "2023-09-22",
     "lat": 12.709069112766755,
     "lng": 77.69426264251439,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "326",
@@ -4617,7 +4924,8 @@
     "date": null,
     "lat": 13.23765633829548,
     "lng": 77.69832203282448,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "327",
@@ -4632,7 +4940,8 @@
     "date": null,
     "lat": 12.97526906903964,
     "lng": 77.75071533356669,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "328",
@@ -4647,7 +4956,8 @@
     "date": null,
     "lat": 12.8887897243536,
     "lng": 77.50883483982761,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "329",
@@ -4662,7 +4972,8 @@
     "date": null,
     "lat": 12.906412280188789,
     "lng": 77.54394148192273,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "330",
@@ -4677,7 +4988,8 @@
     "date": null,
     "lat": 12.973590324020066,
     "lng": 77.7504502988624,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "331",
@@ -4692,7 +5004,8 @@
     "date": null,
     "lat": 12.907508622804073,
     "lng": 77.56048322942826,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "332",
@@ -4707,7 +5020,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "333",
@@ -4722,7 +5036,8 @@
     "date": "2023-10-01",
     "lat": 12.88,
     "lng": 77.57,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "334",
@@ -4737,7 +5052,8 @@
     "date": null,
     "lat": 12.90691689843463,
     "lng": 77.56360526761051,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "335",
@@ -4752,7 +5068,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "336",
@@ -4767,7 +5084,8 @@
     "date": null,
     "lat": 12.78,
     "lng": 77.77,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "337",
@@ -4782,7 +5100,8 @@
     "date": null,
     "lat": 12.921076400532655,
     "lng": 77.61833169700662,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "338",
@@ -4797,7 +5116,8 @@
     "date": null,
     "lat": 13.015653567721188,
     "lng": 77.55404209495981,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "339",
@@ -4812,7 +5132,8 @@
     "date": null,
     "lat": 13.042398421752978,
     "lng": 77.61254199720747,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "340",
@@ -4827,7 +5148,8 @@
     "date": "2023-10-25",
     "lat": 13,
     "lng": 77.5,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "341",
@@ -4842,7 +5164,8 @@
     "date": null,
     "lat": 12.88,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "342",
@@ -4857,7 +5180,8 @@
     "date": "2023-10-31",
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "343",
@@ -4872,7 +5196,8 @@
     "date": "2023-11-01",
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "344",
@@ -4887,7 +5212,8 @@
     "date": null,
     "lat": 13.026676291911471,
     "lng": 77.63614509980619,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "345",
@@ -4902,7 +5228,8 @@
     "date": null,
     "lat": 13.043681816820722,
     "lng": 77.60633932140712,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "347",
@@ -4917,7 +5244,8 @@
     "date": null,
     "lat": 13.04084764382766,
     "lng": 77.61632947180993,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "348",
@@ -4932,7 +5260,8 @@
     "date": null,
     "lat": 13.09304235519933,
     "lng": 77.59728021264112,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "349",
@@ -4947,7 +5276,8 @@
     "date": null,
     "lat": 12.7992908344835,
     "lng": 77.60063058179594,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "350",
@@ -4962,7 +5292,8 @@
     "date": null,
     "lat": 12.939348539002097,
     "lng": 77.60223277920971,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "351",
@@ -4977,7 +5308,8 @@
     "date": null,
     "lat": 12.9116,
     "lng": 77.6389,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "352",
@@ -4992,7 +5324,8 @@
     "date": "2023-12-15",
     "lat": 12.919498450966813,
     "lng": 77.61782442986168,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "353",
@@ -5007,7 +5340,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "354",
@@ -5022,7 +5356,8 @@
     "date": "2024-01-02",
     "lat": 12.9698,
     "lng": 77.75,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "355",
@@ -5037,7 +5372,8 @@
     "date": null,
     "lat": 12.726957258626214,
     "lng": 77.67662043441891,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "356",
@@ -5052,7 +5388,8 @@
     "date": null,
     "lat": 13.02,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "357",
@@ -5067,7 +5404,8 @@
     "date": null,
     "lat": 12.912088236451936,
     "lng": 77.64462737866927,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "358",
@@ -5082,7 +5420,8 @@
     "date": "2024-01-16",
     "lat": 13.228718131731469,
     "lng": 77.68936672777181,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "359",
@@ -5097,7 +5436,8 @@
     "date": null,
     "lat": 13.034002714775454,
     "lng": 77.62922884183604,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "360",
@@ -5112,7 +5452,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.48,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "361",
@@ -5127,7 +5468,8 @@
     "date": null,
     "lat": 12.786248604499733,
     "lng": 77.63832154869681,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "362",
@@ -5142,7 +5484,8 @@
     "date": null,
     "lat": 12.81378822845032,
     "lng": 77.69389699886949,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "363",
@@ -5157,7 +5500,8 @@
     "date": null,
     "lat": 12.823234424105223,
     "lng": 77.68534158008089,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "364",
@@ -5172,7 +5516,8 @@
     "date": null,
     "lat": 12.74953257985237,
     "lng": 77.65932333210816,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "365",
@@ -5187,7 +5532,8 @@
     "date": null,
     "lat": 12.867425439225713,
     "lng": 77.65540434174198,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "366",
@@ -5202,7 +5548,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "367",
@@ -5217,7 +5564,8 @@
     "date": null,
     "lat": 12.982,
     "lng": 77.608,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "368",
@@ -5232,7 +5580,8 @@
     "date": "2024-02-06",
     "lat": 12.97,
     "lng": 77.596,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "369",
@@ -5247,7 +5596,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "370",
@@ -5262,7 +5612,8 @@
     "date": null,
     "lat": 13.249683777565437,
     "lng": 77.70705062129434,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "371",
@@ -5277,7 +5628,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "373",
@@ -5292,7 +5644,8 @@
     "date": null,
     "lat": 12.94,
     "lng": 77.74,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "374",
@@ -5307,7 +5660,8 @@
     "date": null,
     "lat": 13.107225032277526,
     "lng": 77.58121219901784,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "375",
@@ -5322,7 +5676,8 @@
     "date": null,
     "lat": 12.908022451374109,
     "lng": 77.52793516073973,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "376",
@@ -5337,7 +5692,8 @@
     "date": null,
     "lat": 12.930487864630592,
     "lng": 77.6221601450809,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "377",
@@ -5352,7 +5708,8 @@
     "date": "2024-04-02",
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "378",
@@ -5367,7 +5724,8 @@
     "date": null,
     "lat": 13.156914414427433,
     "lng": 77.62378737031855,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "379",
@@ -5382,7 +5740,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "380",
@@ -5397,7 +5756,8 @@
     "date": null,
     "lat": 13.068427669012749,
     "lng": 77.59294387960182,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "381",
@@ -5412,7 +5772,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "382",
@@ -5427,7 +5788,8 @@
     "date": null,
     "lat": 12.997156283697677,
     "lng": 77.75475711281592,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "383",
@@ -5442,7 +5804,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "384",
@@ -5457,7 +5820,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "385",
@@ -5472,7 +5836,8 @@
     "date": "2024-05-20",
     "lat": 12.910368761149513,
     "lng": 77.58945749752439,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "386",
@@ -5487,7 +5852,8 @@
     "date": null,
     "lat": 13.0219385,
     "lng": 77.6385853,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "387",
@@ -5502,7 +5868,8 @@
     "date": null,
     "lat": 12.845167278516158,
     "lng": 77.66055054577151,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "388",
@@ -5517,7 +5884,8 @@
     "date": null,
     "lat": 13.036463200311417,
     "lng": 77.737030130189,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "389",
@@ -5532,7 +5900,8 @@
     "date": null,
     "lat": 13.06,
     "lng": 77.62,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "390",
@@ -5547,7 +5916,8 @@
     "date": null,
     "lat": 12.978239128617574,
     "lng": 77.75124540297702,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "391",
@@ -5562,7 +5932,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "392",
@@ -5577,7 +5948,8 @@
     "date": null,
     "lat": 12.977906373510748,
     "lng": 77.58433318303946,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "393",
@@ -5592,7 +5964,8 @@
     "date": null,
     "lat": 12.79,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "394",
@@ -5607,7 +5980,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "395",
@@ -5622,7 +5996,8 @@
     "date": null,
     "lat": 13.253214656055448,
     "lng": 77.70807084591985,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "396",
@@ -5637,7 +6012,8 @@
     "date": null,
     "lat": 12.866689014861691,
     "lng": 77.63707901991734,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "398",
@@ -5652,7 +6028,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.63,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "399",
@@ -5667,7 +6044,8 @@
     "date": null,
     "lat": 12.99573593300596,
     "lng": 77.76409958617074,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "400",
@@ -5682,7 +6060,8 @@
     "date": null,
     "lat": 12.9817256750204,
     "lng": 77.75204050709345,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "401",
@@ -5697,7 +6076,8 @@
     "date": null,
     "lat": 12.947914612861283,
     "lng": 77.60251462989999,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "402",
@@ -5712,7 +6092,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "403",
@@ -5727,7 +6108,8 @@
     "date": null,
     "lat": 13.132552409888987,
     "lng": 77.35501749660176,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "404",
@@ -5742,7 +6124,8 @@
     "date": null,
     "lat": 13.034367705883653,
     "lng": 77.52895672795137,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "405",
@@ -5757,7 +6140,8 @@
     "date": "2024-08-09",
     "lat": 13,
     "lng": 77.5,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "406",
@@ -5772,7 +6156,8 @@
     "date": null,
     "lat": 13.0206,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "407",
@@ -5787,7 +6172,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "408",
@@ -5802,7 +6188,8 @@
     "date": null,
     "lat": 12.912278429788898,
     "lng": 77.63523958330143,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "409",
@@ -5817,7 +6204,8 @@
     "date": "2024-08-14",
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "410",
@@ -5832,7 +6220,8 @@
     "date": null,
     "lat": 13.070509562038453,
     "lng": 77.5928984060742,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "411",
@@ -5847,7 +6236,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "413",
@@ -5862,7 +6252,8 @@
     "date": null,
     "lat": 12.975533936300053,
     "lng": 77.62594764248894,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "414",
@@ -5877,7 +6268,8 @@
     "date": null,
     "lat": 13.015098787871636,
     "lng": 77.55608774642081,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "415",
@@ -5892,7 +6284,8 @@
     "date": null,
     "lat": 13.041061544809253,
     "lng": 77.62132454701214,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "416",
@@ -5907,7 +6300,8 @@
     "date": null,
     "lat": 12.896763621261783,
     "lng": 77.516992621962,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "417",
@@ -5922,7 +6316,8 @@
     "date": "2024-09-09",
     "lat": 13.24287,
     "lng": 77.244644,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "418",
@@ -5937,7 +6332,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.49,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "419",
@@ -5952,7 +6348,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "420",
@@ -5967,7 +6364,8 @@
     "date": null,
     "lat": 13.020507723769342,
     "lng": 77.71041740308198,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "421",
@@ -5982,7 +6380,8 @@
     "date": null,
     "lat": 13.058405836878933,
     "lng": 77.77049477033984,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "422",
@@ -5997,7 +6396,8 @@
     "date": null,
     "lat": 12.9135339,
     "lng": 77.6061043,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "423",
@@ -6012,7 +6412,8 @@
     "date": null,
     "lat": 13.041243940373064,
     "lng": 77.62276073206846,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "424",
@@ -6027,7 +6428,8 @@
     "date": null,
     "lat": 13.035232676919264,
     "lng": 77.62840547779177,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "425",
@@ -6042,7 +6444,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.67,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "426",
@@ -6057,7 +6460,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "427",
@@ -6072,7 +6476,8 @@
     "date": null,
     "lat": 12.961378076950211,
     "lng": 77.47894001925931,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "428",
@@ -6087,7 +6492,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "429",
@@ -6102,7 +6508,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "430",
@@ -6117,7 +6524,8 @@
     "date": null,
     "lat": 12.975343791217043,
     "lng": 77.61413159520185,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "431",
@@ -6132,7 +6540,8 @@
     "date": null,
     "lat": 13.03234493004176,
     "lng": 77.62994242400731,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "432",
@@ -6147,7 +6556,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "433",
@@ -6162,7 +6572,8 @@
     "date": null,
     "lat": 12.971395024974058,
     "lng": 77.75011900548162,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "434",
@@ -6177,7 +6588,8 @@
     "date": null,
     "lat": 13.02292777084979,
     "lng": 77.60090588422634,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "435",
@@ -6192,7 +6604,8 @@
     "date": "2024-11-05",
     "lat": 13.014112509516025,
     "lng": 77.56528263339942,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "436",
@@ -6207,7 +6620,8 @@
     "date": null,
     "lat": 13.043467918105137,
     "lng": 77.62571582191293,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "437",
@@ -6222,7 +6636,8 @@
     "date": null,
     "lat": 13.081988479418783,
     "lng": 77.41981838671234,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "438",
@@ -6237,7 +6652,8 @@
     "date": null,
     "lat": 13.12021927992673,
     "lng": 77.61026374150651,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "439",
@@ -6252,7 +6668,8 @@
     "date": null,
     "lat": 13.061163053707588,
     "lng": 77.59348956177712,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "440",
@@ -6267,7 +6684,8 @@
     "date": null,
     "lat": 13.065725611459499,
     "lng": 77.57975656034267,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "441",
@@ -6282,7 +6700,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "442",
@@ -6297,7 +6716,8 @@
     "date": null,
     "lat": 13.042818720443577,
     "lng": 77.6425769804157,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "443",
@@ -6312,7 +6732,8 @@
     "date": null,
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "444",
@@ -6327,7 +6748,8 @@
     "date": null,
     "lat": 12.981624701531516,
     "lng": 77.58667471167666,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "445",
@@ -6342,7 +6764,8 @@
     "date": null,
     "lat": 13.027264552846702,
     "lng": 77.63389457141926,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "446",
@@ -6357,7 +6780,8 @@
     "date": null,
     "lat": 13.072760364730115,
     "lng": 77.44103973084248,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "447",
@@ -6372,7 +6796,8 @@
     "date": null,
     "lat": 12.99985437843361,
     "lng": 77.50422080093227,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "448",
@@ -6387,7 +6812,8 @@
     "date": null,
     "lat": 12.92165088311613,
     "lng": 77.49449962558526,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "449",
@@ -6402,7 +6828,8 @@
     "date": null,
     "lat": 13.063531904902987,
     "lng": 77.45619783379163,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "450",
@@ -6417,7 +6844,8 @@
     "date": null,
     "lat": 13.050980646066918,
     "lng": 77.49068251800276,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "451",
@@ -6432,7 +6860,8 @@
     "date": null,
     "lat": 12.909045123379514,
     "lng": 77.64467074031091,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "452",
@@ -6447,7 +6876,8 @@
     "date": null,
     "lat": 13.0454431233304,
     "lng": 77.50849328896913,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "453",
@@ -6462,7 +6892,8 @@
     "date": null,
     "lat": 13.11631403223231,
     "lng": 77.37207036242035,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "454",
@@ -6477,7 +6908,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "455",
@@ -6492,7 +6924,8 @@
     "date": null,
     "lat": 12.995751451823992,
     "lng": 77.50245034539927,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "456",
@@ -6507,7 +6940,8 @@
     "date": null,
     "lat": 13.047288978024142,
     "lng": 77.49864052205186,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "457",
@@ -6522,7 +6956,8 @@
     "date": null,
     "lat": 13.092323557842576,
     "lng": 77.3951864694186,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "458",
@@ -6537,7 +6972,8 @@
     "date": "2024-12-23",
     "lat": 13.0605787249021,
     "lng": 77.46226107497125,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "459",
@@ -6552,7 +6988,8 @@
     "date": "2024-12-23",
     "lat": 13.058363816726867,
     "lng": 77.46756641100444,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "460",
@@ -6567,7 +7004,8 @@
     "date": null,
     "lat": 13.109301673916747,
     "lng": 77.37851255617386,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "461",
@@ -6582,7 +7020,8 @@
     "date": null,
     "lat": 13.035844456854917,
     "lng": 77.52440929706603,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "462",
@@ -6597,7 +7036,8 @@
     "date": null,
     "lat": 13.042120550161854,
     "lng": 77.51720919816472,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "463",
@@ -6612,7 +7052,8 @@
     "date": null,
     "lat": 13.056887200244674,
     "lng": 77.47438755733185,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "464",
@@ -6627,7 +7068,8 @@
     "date": null,
     "lat": 13.045032291023048,
     "lng": 77.74884967380109,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "465",
@@ -6642,7 +7084,8 @@
     "date": null,
     "lat": 12.917,
     "lng": 77.623,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "466",
@@ -6657,7 +7100,8 @@
     "date": "2025-01-02",
     "lat": 12.97,
     "lng": 77.53,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "467",
@@ -6672,7 +7116,8 @@
     "date": "2025-01-02",
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "469",
@@ -6687,7 +7132,8 @@
     "date": "2025-01-05",
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "470",
@@ -6702,7 +7148,8 @@
     "date": null,
     "lat": 13.03,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "471",
@@ -6717,7 +7164,8 @@
     "date": null,
     "lat": 13.023039738750356,
     "lng": 77.64597057739951,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "472",
@@ -6732,7 +7180,8 @@
     "date": null,
     "lat": 13.039992038051722,
     "lng": 77.62434354850683,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "473",
@@ -6747,7 +7196,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.62,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "474",
@@ -6762,7 +7212,8 @@
     "date": null,
     "lat": 12.9652094,
     "lng": 77.717936,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "475",
@@ -6777,7 +7228,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "476",
@@ -6792,7 +7244,8 @@
     "date": null,
     "lat": 12.993401951053016,
     "lng": 77.75735740739174,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "477",
@@ -6807,7 +7260,8 @@
     "date": null,
     "lat": 12.967198075813968,
     "lng": 77.74958893607129,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "478",
@@ -6822,7 +7276,8 @@
     "date": "2025-02-03",
     "lat": 13.059568353450345,
     "lng": 77.59380787636672,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "479",
@@ -6837,7 +7292,8 @@
     "date": null,
     "lat": 12.990486187141855,
     "lng": 77.58861588648506,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "480",
@@ -6852,7 +7308,8 @@
     "date": "2025-02-05",
     "lat": 12.990401683319448,
     "lng": 77.5905454795278,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "481",
@@ -6867,7 +7324,8 @@
     "date": null,
     "lat": 12.989662273638402,
     "lng": 77.59282196570211,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "482",
@@ -6882,7 +7340,8 @@
     "date": null,
     "lat": 12.990380557358463,
     "lng": 77.59182464795043,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "483",
@@ -6897,7 +7356,8 @@
     "date": null,
     "lat": 13.245049421796637,
     "lng": 77.71203838613422,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "484",
@@ -6912,7 +7372,8 @@
     "date": null,
     "lat": 12.999,
     "lng": 77.61,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "485",
@@ -6927,7 +7388,8 @@
     "date": null,
     "lat": 12.979084076987803,
     "lng": 77.64184984014923,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "486",
@@ -6942,7 +7404,8 @@
     "date": null,
     "lat": 12.990131419539779,
     "lng": 77.46957859686546,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "487",
@@ -6957,7 +7420,8 @@
     "date": null,
     "lat": 12.997266745117713,
     "lng": 77.49745000477287,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "488",
@@ -6972,7 +7436,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "490",
@@ -6987,7 +7452,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "491",
@@ -7002,7 +7468,8 @@
     "date": null,
     "lat": 12.981497941264337,
     "lng": 77.59545544406353,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "492",
@@ -7017,7 +7484,8 @@
     "date": null,
     "lat": 13.24383564737063,
     "lng": 77.70999793688173,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "493",
@@ -7032,7 +7500,8 @@
     "date": null,
     "lat": 13.090193020357773,
     "lng": 77.65412743801465,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "494",
@@ -7047,7 +7516,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "495",
@@ -7062,7 +7532,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "496",
@@ -7077,7 +7548,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "497",
@@ -7092,7 +7564,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "498",
@@ -7107,7 +7580,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "499",
@@ -7122,7 +7596,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "500",
@@ -7137,7 +7612,8 @@
     "date": null,
     "lat": 13.069667947822097,
     "lng": 77.58607737889105,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "501",
@@ -7152,7 +7628,8 @@
     "date": null,
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "502",
@@ -7167,7 +7644,8 @@
     "date": null,
     "lat": 12.971,
     "lng": 77.6018,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "503",
@@ -7182,7 +7660,8 @@
     "date": null,
     "lat": 12.911919175585922,
     "lng": 77.64675209909865,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "504",
@@ -7197,7 +7676,8 @@
     "date": null,
     "lat": 13.098841282484472,
     "lng": 77.59082431431142,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "505",
@@ -7212,7 +7692,8 @@
     "date": null,
     "lat": 12.986493700997954,
     "lng": 77.75344814549152,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "506",
@@ -7227,7 +7708,8 @@
     "date": null,
     "lat": 13.0206,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "507",
@@ -7242,7 +7724,8 @@
     "date": null,
     "lat": 13.040954594341216,
     "lng": 77.61759196334458,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "508",
@@ -7257,7 +7740,8 @@
     "date": "2025-04-08",
     "lat": 12.9672152,
     "lng": 77.7160671,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "509",
@@ -7272,7 +7756,8 @@
     "date": null,
     "lat": 13.002968327017143,
     "lng": 77.57127099452504,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "510",
@@ -7287,7 +7772,8 @@
     "date": null,
     "lat": 13.085455999654727,
     "lng": 77.5939434747371,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "511",
@@ -7302,7 +7788,8 @@
     "date": "2025-04-11",
     "lat": 13.040274656893558,
     "lng": 77.47628232020003,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "512",
@@ -7317,7 +7804,8 @@
     "date": null,
     "lat": 12.9664182,
     "lng": 77.5130777,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "513",
@@ -7332,7 +7820,8 @@
     "date": null,
     "lat": 12.998189260914756,
     "lng": 77.75820256398225,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "514",
@@ -7347,7 +7836,8 @@
     "date": "2025-04-16",
     "lat": 13.1045782,
     "lng": 77.6004842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "515",
@@ -7362,7 +7852,8 @@
     "date": null,
     "lat": 13.095138368769554,
     "lng": 77.59426746008711,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "516",
@@ -7377,7 +7868,8 @@
     "date": null,
     "lat": 13.1045782,
     "lng": 77.6004842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "517",
@@ -7392,7 +7884,8 @@
     "date": null,
     "lat": 13.071430823339398,
     "lng": 77.59273695023415,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "518",
@@ -7407,7 +7900,8 @@
     "date": "2025-04-17",
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "519",
@@ -7422,7 +7916,8 @@
     "date": null,
     "lat": 12.996171072431707,
     "lng": 77.50010568807096,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "520",
@@ -7437,7 +7932,8 @@
     "date": null,
     "lat": 12.997686363163993,
     "lng": 77.5029766970435,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "521",
@@ -7452,7 +7948,8 @@
     "date": "2025-04-29",
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "522",
@@ -7467,7 +7964,8 @@
     "date": null,
     "lat": 12.91,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "523",
@@ -7482,7 +7980,8 @@
     "date": "2025-04-30",
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "524",
@@ -7497,7 +7996,8 @@
     "date": null,
     "lat": 12.976216206025597,
     "lng": 77.58804060338116,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "525",
@@ -7512,7 +8012,8 @@
     "date": null,
     "lat": 12.9763,
     "lng": 77.5929,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "526",
@@ -7527,7 +8028,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "527",
@@ -7542,7 +8044,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "528",
@@ -7557,7 +8060,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.57,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "529",
@@ -7572,7 +8076,8 @@
     "date": null,
     "lat": 12.999831066542754,
     "lng": 77.50352697376331,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "530",
@@ -7587,7 +8092,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "532",
@@ -7602,7 +8108,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "533",
@@ -7617,7 +8124,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "534",
@@ -7632,7 +8140,8 @@
     "date": null,
     "lat": 12.84440417149493,
     "lng": 77.65654120876025,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "535",
@@ -7647,7 +8156,8 @@
     "date": null,
     "lat": 12.859578586990537,
     "lng": 77.65424889867597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "536",
@@ -7662,7 +8172,8 @@
     "date": null,
     "lat": 12.845243129673023,
     "lng": 77.65876118918641,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "537",
@@ -7677,7 +8188,8 @@
     "date": null,
     "lat": 13.039683,
     "lng": 77.573906,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "538",
@@ -7692,7 +8204,8 @@
     "date": null,
     "lat": 12.844863873654859,
     "lng": 77.67260925319653,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "539",
@@ -7707,7 +8220,8 @@
     "date": "2025-05-26",
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "540",
@@ -7722,7 +8236,8 @@
     "date": "2025-05-27",
     "lat": 12.85487626526205,
     "lng": 77.60968751627496,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "541",
@@ -7737,7 +8252,8 @@
     "date": null,
     "lat": 12.9635939618572,
     "lng": 77.5785234850535,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "542",
@@ -7752,7 +8268,8 @@
     "date": "2025-06-04",
     "lat": 12.95,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "543",
@@ -7767,7 +8284,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.595,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "545",
@@ -7782,7 +8300,8 @@
     "date": "2025-06-08",
     "lat": 13.016249440992723,
     "lng": 77.55631972751462,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "546",
@@ -7797,7 +8316,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "547",
@@ -7812,7 +8332,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "548",
@@ -7827,7 +8348,8 @@
     "date": null,
     "lat": 12.885384835131092,
     "lng": 77.64215576507144,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "549",
@@ -7842,7 +8364,8 @@
     "date": null,
     "lat": 12.97,
     "lng": 77.53,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "550",
@@ -7857,7 +8380,8 @@
     "date": null,
     "lat": 12.997672772843543,
     "lng": 77.75190798973642,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "551",
@@ -7872,7 +8396,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.68,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "552",
@@ -7887,7 +8412,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "553",
@@ -7902,7 +8428,8 @@
     "date": null,
     "lat": 13.043200544451025,
     "lng": 77.60963277758424,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "554",
@@ -7917,7 +8444,8 @@
     "date": null,
     "lat": 13.107363956799958,
     "lng": 77.66385413914998,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "555",
@@ -7932,7 +8460,8 @@
     "date": null,
     "lat": 12.9763,
     "lng": 77.5929,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "556",
@@ -7947,7 +8476,8 @@
     "date": null,
     "lat": 13.001818468993477,
     "lng": 77.75722489003954,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "558",
@@ -7962,7 +8492,8 @@
     "date": null,
     "lat": 13.080374474416544,
     "lng": 77.60894842826536,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "559",
@@ -7977,7 +8508,8 @@
     "date": null,
     "lat": 13.041382395934463,
     "lng": 77.61528654402122,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "560",
@@ -7992,7 +8524,8 @@
     "date": null,
     "lat": 13.038494720824147,
     "lng": 77.62555114910504,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "561",
@@ -8007,7 +8540,8 @@
     "date": "2025-06-30",
     "lat": 12.71,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "562",
@@ -8022,7 +8556,8 @@
     "date": null,
     "lat": 12.78,
     "lng": 77.77,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "563",
@@ -8037,7 +8572,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "564",
@@ -8052,7 +8588,8 @@
     "date": null,
     "lat": 12.71,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "565",
@@ -8067,7 +8604,8 @@
     "date": null,
     "lat": 13.236001139597647,
     "lng": 77.69673501673941,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "566",
@@ -8082,7 +8620,8 @@
     "date": null,
     "lat": 12.9,
     "lng": 77.48,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "567",
@@ -8097,7 +8636,8 @@
     "date": null,
     "lat": 13.243063242312388,
     "lng": 77.70671054641923,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "568",
@@ -8112,7 +8652,8 @@
     "date": null,
     "lat": 12.93460838421501,
     "lng": 77.62389461073712,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "569",
@@ -8127,7 +8668,8 @@
     "date": null,
     "lat": 13.091016191796456,
     "lng": 77.59412399567924,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "570",
@@ -8142,7 +8684,8 @@
     "date": "2025-07-18",
     "lat": 12.975280409490793,
     "lng": 77.60723709421609,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "571",
@@ -8157,7 +8700,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "572",
@@ -8172,7 +8716,8 @@
     "date": null,
     "lat": 12.55,
     "lng": 77.42,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "573",
@@ -8187,7 +8732,8 @@
     "date": null,
     "lat": 12.88,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "574",
@@ -8202,7 +8748,8 @@
     "date": "2025-07-27",
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "575",
@@ -8217,7 +8764,8 @@
     "date": null,
     "lat": 13.02414709611324,
     "lng": 77.59792495218875,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "576",
@@ -8232,7 +8780,8 @@
     "date": null,
     "lat": 13.042131046941975,
     "lng": 77.61385937967714,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "577",
@@ -8247,7 +8796,8 @@
     "date": null,
     "lat": 12.91982456136121,
     "lng": 77.61743588481619,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "578",
@@ -8262,7 +8812,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.67,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "579",
@@ -8277,7 +8828,8 @@
     "date": null,
     "lat": 13.001381189403162,
     "lng": 77.57152943199566,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "580",
@@ -8292,7 +8844,8 @@
     "date": "2025-08-16",
     "lat": 12.9,
     "lng": 77.48,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "581",
@@ -8307,7 +8860,8 @@
     "date": null,
     "lat": 13.024081347018054,
     "lng": 77.59462712209171,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "582",
@@ -8322,7 +8876,8 @@
     "date": null,
     "lat": 13.036516109160289,
     "lng": 77.62769189561891,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "583",
@@ -8337,7 +8892,8 @@
     "date": null,
     "lat": 13.011470740997353,
     "lng": 77.58082559724875,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "584",
@@ -8352,7 +8908,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "585",
@@ -8367,7 +8924,8 @@
     "date": null,
     "lat": 13.096675434051775,
     "lng": 77.59606076517792,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "587",
@@ -8382,7 +8940,8 @@
     "date": null,
     "lat": 13.110089414665538,
     "lng": 77.60402303978663,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "588",
@@ -8397,7 +8956,8 @@
     "date": null,
     "lat": 13.221876320033118,
     "lng": 77.68267858855603,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "589",
@@ -8412,7 +8972,8 @@
     "date": null,
     "lat": 12.981455687828728,
     "lng": 77.59441476466907,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "590",
@@ -8427,7 +8988,8 @@
     "date": null,
     "lat": 13.22673181908337,
     "lng": 77.68743963681146,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "591",
@@ -8442,7 +9004,8 @@
     "date": null,
     "lat": 13.09953993920547,
     "lng": 77.58938967023636,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "592",
@@ -8457,7 +9020,8 @@
     "date": "2025-08-25",
     "lat": 13.220000305868894,
     "lng": 77.6810915724709,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "593",
@@ -8472,7 +9036,8 @@
     "date": null,
     "lat": 13.230373379906453,
     "lng": 77.69106710214919,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "594",
@@ -8487,7 +9052,8 @@
     "date": null,
     "lat": 12.978814833787112,
     "lng": 77.5917697045432,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "595",
@@ -8502,7 +9068,8 @@
     "date": null,
     "lat": 13.098771416703073,
     "lng": 77.59735194484506,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "596",
@@ -8517,7 +9084,8 @@
     "date": null,
     "lat": 13.082701760633242,
     "lng": 77.59347840584763,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "597",
@@ -8532,7 +9100,8 @@
     "date": null,
     "lat": 12.79,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "598",
@@ -8547,7 +9116,8 @@
     "date": null,
     "lat": 13.014516782276587,
     "lng": 77.5725668364517,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "599",
@@ -8562,7 +9132,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "600",
@@ -8577,7 +9148,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "601",
@@ -8592,7 +9164,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.61,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "602",
@@ -8607,7 +9180,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "603",
@@ -8622,7 +9196,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "604",
@@ -8637,7 +9212,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "605",
@@ -8652,7 +9228,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "606",
@@ -8667,7 +9244,8 @@
     "date": null,
     "lat": 12.9351457,
     "lng": 77.7047541,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "607",
@@ -8682,7 +9260,8 @@
     "date": null,
     "lat": 12.9591,
     "lng": 77.7009,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "608",
@@ -8697,7 +9276,8 @@
     "date": null,
     "lat": 13,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "609",
@@ -8712,7 +9292,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.67,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "610",
@@ -8727,7 +9308,8 @@
     "date": null,
     "lat": 12.984625996128614,
     "lng": 77.48314768854186,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "611",
@@ -8742,7 +9324,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "612",
@@ -8757,7 +9340,8 @@
     "date": null,
     "lat": 13.06796160867954,
     "lng": 77.44899773489027,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "613",
@@ -8772,7 +9356,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "614",
@@ -8787,7 +9372,8 @@
     "date": "2025-09-13",
     "lat": 12.94,
     "lng": 77.74,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "615",
@@ -8802,7 +9388,8 @@
     "date": "2025-09-13",
     "lat": 12.982,
     "lng": 77.608,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "616",
@@ -8817,7 +9404,8 @@
     "date": null,
     "lat": 12.973949389500731,
     "lng": 77.62362779467304,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "617",
@@ -8832,7 +9420,8 @@
     "date": "2025-09-14",
     "lat": 12.94,
     "lng": 77.74,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "618",
@@ -8847,7 +9436,8 @@
     "date": null,
     "lat": 12.97357388755242,
     "lng": 77.62299249583458,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "619",
@@ -8862,7 +9452,8 @@
     "date": null,
     "lat": 12.9351457,
     "lng": 77.7047541,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "620",
@@ -8877,7 +9468,8 @@
     "date": "2025-09-16",
     "lat": 12.9352,
     "lng": 77.6245,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "621",
@@ -8892,7 +9484,8 @@
     "date": null,
     "lat": 12.9422,
     "lng": 77.5755,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "622",
@@ -8907,7 +9500,8 @@
     "date": null,
     "lat": 12.972433005882877,
     "lng": 77.61889482072093,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "623",
@@ -8922,7 +9516,8 @@
     "date": null,
     "lat": 12.9116,
     "lng": 77.6389,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "624",
@@ -8937,7 +9532,8 @@
     "date": null,
     "lat": 13.042879695683524,
     "lng": 77.61111483286334,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "625",
@@ -8952,7 +9548,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.8,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "626",
@@ -8967,7 +9564,8 @@
     "date": null,
     "lat": 12.963,
     "lng": 77.578,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "627",
@@ -8982,7 +9580,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "628",
@@ -8997,7 +9596,8 @@
     "date": null,
     "lat": 12.93,
     "lng": 77.67,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "629",
@@ -9012,7 +9612,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "630",
@@ -9027,7 +9628,8 @@
     "date": "2025-09-30",
     "lat": 12.9698,
     "lng": 77.75,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "631",
@@ -9042,7 +9644,8 @@
     "date": "2025-09-30",
     "lat": 13.046653,
     "lng": 77.750134,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "632",
@@ -9057,7 +9660,8 @@
     "date": null,
     "lat": 13.010211126718332,
     "lng": 77.75908013297482,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "633",
@@ -9072,7 +9676,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "634",
@@ -9087,7 +9692,8 @@
     "date": "2025-09-30",
     "lat": 12.968777,
     "lng": 77.744983,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "635",
@@ -9102,7 +9708,8 @@
     "date": null,
     "lat": 12.922107322197135,
     "lng": 77.61927068086788,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "636",
@@ -9117,7 +9724,8 @@
     "date": null,
     "lat": 12.977815665951894,
     "lng": 77.60660835041614,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "637",
@@ -9132,7 +9740,8 @@
     "date": null,
     "lat": 12.912193899434527,
     "lng": 77.64154870212872,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "638",
@@ -9147,7 +9756,8 @@
     "date": null,
     "lat": 13.0358,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "639",
@@ -9162,7 +9772,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "640",
@@ -9177,7 +9788,8 @@
     "date": "2025-10-10",
     "lat": 13.1007,
     "lng": 77.5963,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "641",
@@ -9192,7 +9804,8 @@
     "date": null,
     "lat": 12.974794482383402,
     "lng": 77.62015886335945,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "642",
@@ -9207,7 +9820,8 @@
     "date": null,
     "lat": 12.9756,
     "lng": 77.6065,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "643",
@@ -9222,7 +9836,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.55,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "644",
@@ -9237,7 +9852,8 @@
     "date": null,
     "lat": 12.763588223554663,
     "lng": 77.79286665522937,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "645",
@@ -9252,7 +9868,8 @@
     "date": null,
     "lat": 12.9255,
     "lng": 77.5468,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "646",
@@ -9267,7 +9884,8 @@
     "date": null,
     "lat": 13.030633656735546,
     "lng": 77.63071089711514,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "647",
@@ -9282,7 +9900,8 @@
     "date": null,
     "lat": 12.88,
     "lng": 77.6,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "648",
@@ -9297,7 +9916,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "649",
@@ -9312,7 +9932,8 @@
     "date": null,
     "lat": 13.018408554752,
     "lng": 77.59883633693664,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "650",
@@ -9327,7 +9948,8 @@
     "date": null,
     "lat": 12.93505212841896,
     "lng": 77.62443663125515,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "651",
@@ -9342,7 +9964,8 @@
     "date": null,
     "lat": 12.9716,
     "lng": 77.6071,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "653",
@@ -9357,7 +9980,8 @@
     "date": null,
     "lat": 12.925,
     "lng": 77.5938,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "654",
@@ -9372,7 +9996,8 @@
     "date": null,
     "lat": 12.972475260853017,
     "lng": 77.62008726586038,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "656",
@@ -9387,7 +10012,8 @@
     "date": null,
     "lat": 12.984180462526226,
     "lng": 77.48208641170447,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "659",
@@ -9402,7 +10028,8 @@
     "date": null,
     "lat": 13.014566606132107,
     "lng": 77.58105564918583,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "662",
@@ -9417,7 +10044,8 @@
     "date": null,
     "lat": 12.979300946159412,
     "lng": 77.64440922353418,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "663",
@@ -9432,7 +10060,8 @@
     "date": null,
     "lat": 13.062934930806833,
     "lng": 77.59344408826234,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "664",
@@ -9447,7 +10076,8 @@
     "date": null,
     "lat": 12.9507,
     "lng": 77.5848,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "665",
@@ -9462,7 +10092,8 @@
     "date": "2025-10-25",
     "lat": 12.849377,
     "lng": 77.692844,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "666",
@@ -9477,7 +10108,8 @@
     "date": null,
     "lat": 13.07,
     "lng": 77.56,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "667",
@@ -9492,7 +10124,8 @@
     "date": null,
     "lat": 12.972475260853017,
     "lng": 77.61935011795583,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "668",
@@ -9507,7 +10140,8 @@
     "date": null,
     "lat": 13.076820777727988,
     "lng": 77.43270277421948,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "669",
@@ -9522,7 +10156,8 @@
     "date": null,
     "lat": 13.067453159861628,
     "lng": 77.593080300145,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "670",
@@ -9537,7 +10172,8 @@
     "date": null,
     "lat": 12.89,
     "lng": 77.597,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "671",
@@ -9552,7 +10188,8 @@
     "date": null,
     "lat": 12.979188919074488,
     "lng": 77.60244563283948,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "672",
@@ -9567,7 +10204,8 @@
     "date": null,
     "lat": 12.910154477705632,
     "lng": 77.59525492133639,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "673",
@@ -9582,7 +10220,8 @@
     "date": null,
     "lat": 12.86,
     "lng": 77.59,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "674",
@@ -9597,7 +10236,8 @@
     "date": null,
     "lat": 12.910154477705632,
     "lng": 77.59471290081842,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "675",
@@ -9612,7 +10252,8 @@
     "date": null,
     "lat": 12.947495503875473,
     "lng": 77.59817970366686,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "676",
@@ -9627,7 +10268,8 @@
     "date": null,
     "lat": 12.956073975057237,
     "lng": 77.5922384660189,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "677",
@@ -9642,7 +10284,8 @@
     "date": null,
     "lat": 12.95011556088454,
     "lng": 77.59651028047125,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "678",
@@ -9657,7 +10300,8 @@
     "date": null,
     "lat": 12.946967263238108,
     "lng": 77.5963368339061,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "679",
@@ -9672,7 +10316,8 @@
     "date": "2025-11-03",
     "lat": 12.963154,
     "lng": 77.601173,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "680",
@@ -9687,7 +10332,8 @@
     "date": null,
     "lat": 12.986,
     "lng": 77.605,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "681",
@@ -9702,7 +10348,8 @@
     "date": null,
     "lat": 12.912320694955412,
     "lng": 77.63662715582734,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "682",
@@ -9717,7 +10364,8 @@
     "date": null,
     "lat": 13.084203175563246,
     "lng": 77.4145130506792,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "683",
@@ -9732,7 +10380,8 @@
     "date": "2025-11-05",
     "lat": 13.130707193748592,
     "lng": 77.40276552089375,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "684",
@@ -9747,7 +10396,8 @@
     "date": null,
     "lat": 13.098598215387142,
     "lng": 77.38609160764906,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "685",
@@ -9762,7 +10412,8 @@
     "date": null,
     "lat": 13.112992413740571,
     "lng": 77.38912322823893,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "686",
@@ -9777,7 +10428,8 @@
     "date": "2025-11-05",
     "lat": 13.086417851810225,
     "lng": 77.41034457236907,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "687",
@@ -9792,7 +10444,8 @@
     "date": null,
     "lat": 12.97323707204852,
     "lng": 77.41847681000007,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "688",
@@ -9807,7 +10460,8 @@
     "date": "2025-11-06",
     "lat": 12.92432537624478,
     "lng": 77.63874409593052,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "689",
@@ -9822,7 +10476,8 @@
     "date": null,
     "lat": 13.12443335518843,
     "lng": 77.36562816866677,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "690",
@@ -9837,7 +10492,8 @@
     "date": "2025-11-08",
     "lat": 12.94759,
     "lng": 77.654833,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "691",
@@ -9852,7 +10508,8 @@
     "date": null,
     "lat": 12.912067103849353,
     "lng": 77.64263274316357,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "692",
@@ -9867,7 +10524,8 @@
     "date": null,
     "lat": 13.03,
     "lng": 77.57,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "693",
@@ -9882,7 +10540,8 @@
     "date": null,
     "lat": 12.93610865906048,
     "lng": 77.62560739557318,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "694",
@@ -9897,7 +10556,8 @@
     "date": null,
     "lat": 12.938116054951777,
     "lng": 77.62846926390705,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "695",
@@ -9912,7 +10572,8 @@
     "date": null,
     "lat": 12.98877700689414,
     "lng": 77.75444202563659,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "696",
@@ -9927,7 +10588,8 @@
     "date": null,
     "lat": 13.0206,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "697",
@@ -9942,7 +10604,8 @@
     "date": null,
     "lat": 13.025285851419781,
     "lng": 77.6409755021989,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "698",
@@ -9957,7 +10620,8 @@
     "date": null,
     "lat": 12.9071285784091,
     "lng": 77.62895160041262,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "699",
@@ -9972,7 +10636,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.64,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "700",
@@ -9987,7 +10652,8 @@
     "date": null,
     "lat": 13.01,
     "lng": 77.65,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "701",
@@ -10002,7 +10668,8 @@
     "date": null,
     "lat": 13.020425250503479,
     "lng": 77.59369202400183,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "702",
@@ -10017,7 +10684,8 @@
     "date": null,
     "lat": 12.972580898246378,
     "lng": 77.61974037272881,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "707",
@@ -10032,7 +10700,8 @@
     "date": null,
     "lat": 13.084007740014613,
     "lng": 77.60514662146988,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "708",
@@ -10047,7 +10716,8 @@
     "date": null,
     "lat": 13.103731837898096,
     "lng": 77.60057989401093,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "709",
@@ -10062,7 +10732,8 @@
     "date": null,
     "lat": 12.99,
     "lng": 77.7,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "710",
@@ -10077,7 +10748,8 @@
     "date": null,
     "lat": 12.976617621843559,
     "lng": 77.59944471507379,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "711",
@@ -10092,7 +10764,8 @@
     "date": null,
     "lat": 13.04,
     "lng": 77.595,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "712",
@@ -10107,7 +10780,8 @@
     "date": null,
     "lat": 13.244939078916687,
     "lng": 77.71294525246907,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "713",
@@ -10122,7 +10796,8 @@
     "date": null,
     "lat": 13.241297735834351,
     "lng": 77.70228957303891,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "714",
@@ -10137,7 +10812,8 @@
     "date": null,
     "lat": 13.0874313451461,
     "lng": 77.59381293328937,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "715",
@@ -10152,7 +10828,8 @@
     "date": null,
     "lat": 12.720006,
     "lng": 77.3184199,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "717",
@@ -10167,7 +10844,8 @@
     "date": null,
     "lat": 13.043574867486399,
     "lng": 77.60809583136864,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "719",
@@ -10182,7 +10860,8 @@
     "date": null,
     "lat": 13.2,
     "lng": 77.5,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "720",
@@ -10197,7 +10876,8 @@
     "date": null,
     "lat": 12.912067103849353,
     "lng": 77.64519108000752,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "721",
@@ -10212,7 +10892,8 @@
     "date": null,
     "lat": 12.9784,
     "lng": 77.6408,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "722",
@@ -10227,7 +10908,8 @@
     "date": null,
     "lat": 12.958,
     "lng": 77.66,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "723",
@@ -10242,7 +10924,8 @@
     "date": null,
     "lat": 12.912447490410713,
     "lng": 77.63237771496875,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "724",
@@ -10257,7 +10940,8 @@
     "date": null,
     "lat": 13.10135643740287,
     "lng": 77.58759636514554,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "725",
@@ -10272,7 +10956,8 @@
     "date": "2015-01-28",
     "lat": 12.8095,
     "lng": 77.589,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "726",
@@ -10287,7 +10972,8 @@
     "date": "2016-07-05",
     "lat": 12.8062,
     "lng": 77.514,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "727",
@@ -10302,7 +10988,8 @@
     "date": "2016-07-07",
     "lat": 12.9795,
     "lng": 77.5985,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "728",
@@ -10317,7 +11004,8 @@
     "date": "2017-08-20",
     "lat": 12.9353,
     "lng": 77.62,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "729",
@@ -10332,7 +11020,8 @@
     "date": "2018-04-18",
     "lat": 13.0437,
     "lng": 77.5563,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "730",
@@ -10347,7 +11036,8 @@
     "date": "2018-12-22",
     "lat": 12.8985,
     "lng": 77.5412,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "731",
@@ -10362,7 +11052,8 @@
     "date": "2018-12-22",
     "lat": 13.16,
     "lng": 77.623,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "732",
@@ -10377,7 +11068,8 @@
     "date": "2019-01-01",
     "lat": 12.9555,
     "lng": 77.494,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "733",
@@ -10392,7 +11084,8 @@
     "date": "2019-01-05",
     "lat": 13.0577,
     "lng": 77.5928,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "734",
@@ -10407,7 +11100,8 @@
     "date": "2019-01-05",
     "lat": 13.0998,
     "lng": 77.5968,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "735",
@@ -10422,7 +11116,8 @@
     "date": "2019-02-09",
     "lat": 12.9868,
     "lng": 77.5118,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "736",
@@ -10437,7 +11132,8 @@
     "date": "2022-09-11",
     "lat": 12.9588,
     "lng": 77.7142,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "737",
@@ -10452,7 +11148,8 @@
     "date": "2023-02-05",
     "lat": 13.0625,
     "lng": 77.6395,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "738",
@@ -10467,7 +11164,8 @@
     "date": "2023-02-26",
     "lat": 12.9868,
     "lng": 77.5858,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "739",
@@ -10482,7 +11180,8 @@
     "date": "2023-06-13",
     "lat": 12.9218,
     "lng": 77.5795,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "740",
@@ -10497,7 +11196,8 @@
     "date": "2023-06-25",
     "lat": 12.9975,
     "lng": 77.5535,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "741",
@@ -10512,7 +11212,8 @@
     "date": "2023-07-09",
     "lat": 12.9225,
     "lng": 77.5525,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "742",
@@ -10527,7 +11228,8 @@
     "date": "2023-07-15",
     "lat": 13.0995,
     "lng": 77.5835,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "743",
@@ -10542,7 +11244,8 @@
     "date": "2023-07-18",
     "lat": 12.9905,
     "lng": 77.7545,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "744",
@@ -10557,7 +11260,8 @@
     "date": "2023-07-26",
     "lat": 12.9712,
     "lng": 77.6407,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "745",
@@ -10572,7 +11276,8 @@
     "date": "2023-09-16",
     "lat": 12.931,
     "lng": 77.74,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "746",
@@ -10587,7 +11292,8 @@
     "date": "2023-09-16",
     "lat": 13.147,
     "lng": 77.6195,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "747",
@@ -10602,7 +11308,8 @@
     "date": "2023-09-20",
     "lat": 13.0331,
     "lng": 77.5268,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "748",
@@ -10617,7 +11324,8 @@
     "date": "2023-09-20",
     "lat": 12.9262,
     "lng": 77.6003,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "749",
@@ -10632,7 +11340,8 @@
     "date": "2023-09-20",
     "lat": 12.9232,
     "lng": 77.5188,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "750",
@@ -10647,7 +11356,8 @@
     "date": "2023-09-20",
     "lat": 12.9512,
     "lng": 77.5043,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "751",
@@ -10662,7 +11372,8 @@
     "date": "2023-10-14",
     "lat": 12.8812,
     "lng": 77.6412,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "752",
@@ -10677,7 +11388,8 @@
     "date": "2023-10-15",
     "lat": 13.0455,
     "lng": 77.5062,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "753",
@@ -10692,7 +11404,8 @@
     "date": "2023-11-28",
     "lat": 12.9165,
     "lng": 77.6102,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "754",
@@ -10707,7 +11420,8 @@
     "date": "2023-11-30",
     "lat": 12.869,
     "lng": 77.5195,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "755",
@@ -10722,7 +11436,8 @@
     "date": "2024-02-09",
     "lat": 12.9168,
     "lng": 77.6232,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "756",
@@ -10737,7 +11452,8 @@
     "date": "2024-02-10",
     "lat": 13.0082,
     "lng": 77.5489,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "757",
@@ -10752,7 +11468,8 @@
     "date": "2024-06-24",
     "lat": 12.9898,
     "lng": 77.5847,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "758",
@@ -10767,7 +11484,8 @@
     "date": "2024-07-11",
     "lat": 12.7945,
     "lng": 77.612,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "759",
@@ -10782,7 +11500,8 @@
     "date": "2024-07-31",
     "lat": 13.0402,
     "lng": 77.5918,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "760",
@@ -10797,7 +11516,8 @@
     "date": "2024-12-01",
     "lat": 13.058,
     "lng": 77.485,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "761",
@@ -10812,7 +11532,8 @@
     "date": "2025-03-07",
     "lat": 13.0655,
     "lng": 77.5948,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "762",
@@ -10827,7 +11548,8 @@
     "date": "2025-03-09",
     "lat": 13.0738,
     "lng": 77.5946,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "763",
@@ -10842,7 +11564,8 @@
     "date": "2025-03-10",
     "lat": 12.9978,
     "lng": 77.6142,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "764",
@@ -10857,7 +11580,8 @@
     "date": "2025-04-13",
     "lat": 12.9075,
     "lng": 77.677,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "765",
@@ -10872,7 +11596,8 @@
     "date": "2025-04-14",
     "lat": 12.892,
     "lng": 77.557,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "766",
@@ -10887,7 +11612,8 @@
     "date": "2025-05-08",
     "lat": 13.185,
     "lng": 77.658,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "767",
@@ -10902,7 +11628,8 @@
     "date": "2025-05-21",
     "lat": 12.9318,
     "lng": 77.6288,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "768",
@@ -10917,7 +11644,8 @@
     "date": "2025-08-31",
     "lat": 12.9842,
     "lng": 77.7568,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "769",
@@ -10932,7 +11660,8 @@
     "date": "2025-10-24",
     "lat": 13.088,
     "lng": 77.379,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "770",
@@ -10947,7 +11676,8 @@
     "date": "2025-10-24",
     "lat": 13.0705,
     "lng": 77.4685,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "771",
@@ -10962,7 +11692,8 @@
     "date": "2025-11-30",
     "lat": 13.2205,
     "lng": 77.7005,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "772",
@@ -10977,7 +11708,8 @@
     "date": "2025-12-26",
     "lat": 12.9574,
     "lng": 77.6563,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "773",
@@ -10992,7 +11724,8 @@
     "date": "2026-01-01",
     "lat": 12.9885,
     "lng": 77.5893,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "774",
@@ -11007,7 +11740,8 @@
     "date": "2026-01-03",
     "lat": 12.9731,
     "lng": 77.5118,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "775",
@@ -11022,7 +11756,8 @@
     "date": "2026-02-04",
     "lat": 12.9963,
     "lng": 77.6688,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "776",
@@ -11037,7 +11772,8 @@
     "date": "2026-03-08",
     "lat": 12.7985,
     "lng": 77.512,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "777",
@@ -11052,7 +11788,8 @@
     "date": "2026-03-28",
     "lat": 12.9878,
     "lng": 77.5948,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "778",
@@ -11067,7 +11804,8 @@
     "date": "2026-04-21",
     "lat": 13.1405,
     "lng": 77.4885,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "779",
@@ -11082,7 +11820,8 @@
     "date": "2026-04-24",
     "lat": 12.8995,
     "lng": 77.5135,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "780",
@@ -11097,7 +11836,8 @@
     "date": "2026-05-08",
     "lat": 12.9757,
     "lng": 77.6018,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "781",
@@ -11112,7 +11852,8 @@
     "date": "2026-06-08",
     "lat": 12.9925,
     "lng": 77.5718,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "782",
@@ -11127,7 +11868,8 @@
     "date": "2026-06-08",
     "lat": 13.0398,
     "lng": 77.5913,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "783",
@@ -11142,7 +11884,8 @@
     "date": "2026-06-11",
     "lat": 13.0268,
     "lng": 77.5474,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "784",
@@ -11157,7 +11900,8 @@
     "date": "2026-06-13",
     "lat": 13.0705,
     "lng": 77.7885,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "785",
@@ -11172,7 +11916,8 @@
     "date": "2026-06-21",
     "lat": 13.0128,
     "lng": 77.7108,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "786",
@@ -11187,7 +11932,8 @@
     "date": "2026-07-16",
     "lat": 12.9259,
     "lng": 77.6762,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "787",
@@ -11202,7 +11948,8 @@
     "date": "2026-08-11",
     "lat": 12.8458,
     "lng": 77.6632,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "788",
@@ -11217,7 +11964,8 @@
     "date": "2026-08-24",
     "lat": 12.9851,
     "lng": 77.6789,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "789",
@@ -11232,7 +11980,8 @@
     "date": "2026-08-30",
     "lat": 13.0287,
     "lng": 77.5412,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "790",
@@ -11247,7 +11996,8 @@
     "date": "2026-08-30",
     "lat": 13.0372,
     "lng": 77.5236,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "791",
@@ -11262,7 +12012,8 @@
     "date": "2026-09-06",
     "lat": 13.2395,
     "lng": 77.705,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "792",
@@ -11277,7 +12028,8 @@
     "date": "2026-09-12",
     "lat": 12.929,
     "lng": 77.54,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "793",
@@ -11292,7 +12044,8 @@
     "date": "2026-09-19",
     "lat": 13.169,
     "lng": 77.5585,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   },
   {
     "id": "794",
@@ -11307,6 +12060,7 @@
     "date": "2026-09-20",
     "lat": 12.9728,
     "lng": 77.5122,
-    "hasCoords": true
+    "hasCoords": true,
+    "status": "active"
   }
 ]

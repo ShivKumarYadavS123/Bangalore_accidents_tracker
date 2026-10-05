@@ -3,7 +3,8 @@
  *
  * Flow for one alert:
  *   1. A bystander sends an SOS (location + quick triage, optional photo).
- *      Reports of the same crash (≤200 m, ≤15 min) are merged into one alert.
+ *      Reports of the same crash (≤200 m, ≤15 min) are merged into one alert;
+ *      only the first reporter's link can change or cancel it.
  *   2. Emergency-capable hospitals near the scene are ranked by drive time
  *      (OSRM), adjusted for the alert's priority and each hospital's live ER
  *      status. The best `roundSize` are notified (round 1).
@@ -476,7 +477,17 @@ export function createEmergencyService({ store, router, bus, notify = null, geoc
 
   // ── Access checks ────────────────────────────────────────────────────────
 
-  const trackAllowed = (alert, token) => tokenMatches(token, alert.track_token_hashes);
+  // The first tracking token belongs to whoever raised the SOS ('owner').
+  // Reports merged in later get their own token, appended after it, which is
+  // view-only ('viewer'): it cannot change or cancel the alert and does not
+  // see other people's notes.
+  function trackRole(alert, token) {
+    const hashes = Array.isArray(alert?.track_token_hashes) ? alert.track_token_hashes : [];
+    if (tokenMatches(token, hashes.slice(0, 1))) return 'owner';
+    if (tokenMatches(token, hashes.slice(1))) return 'viewer';
+    return null;
+  }
+  const trackAllowed = (alert, token) => trackRole(alert, token) !== null;
   const crewAllowed = (alert, token) => tokenMatches(token, alert.crew_token_hashes);
 
   function responderCanSee(alert, responder, targets) {
@@ -523,24 +534,30 @@ export function createEmergencyService({ store, router, bus, notify = null, geoc
     };
   }
 
-  /** What the reporter's tracking page sees (no hospital-internal details such as declines). */
-  async function publicView(alert) {
+  /**
+   * What the reporter's tracking page sees (no hospital-internal details such as declines).
+   * A view-only link (a merged report) gets no notes or cancel reason and cannot cancel.
+   */
+  async function publicView(alert, { role = 'owner' } = {}) {
+    const viewOnly = role !== 'owner';
     const [targets, events] = await Promise.all([store.getTargets(alert.id), store.getEvents(alert.id)]);
     const hospitals = await targetHospitals(alert.id, targets);
     const accepted = alert.accepted_hospital_id ? await store.getHospital(alert.accepted_hospital_id) : null;
     return {
       ...common(alert),
-      note: alert.note,
+      ...(viewOnly ? { cancel_reason: null } : {}),
+      note: viewOnly ? null : alert.note,
       reporter_phone_set: !!alert.reporter_phone,
-      can_cancel: REPORTER_CANCELLABLE.includes(alert.status),
+      view_only: viewOnly,
+      can_cancel: !viewOnly && REPORTER_CANCELLABLE.includes(alert.status),
       accepted_hospital: accepted && { id: accepted.id, name: accepted.name, phone: accepted.phone, address: accepted.address, lat: accepted.lat, lng: accepted.lng, emergency_level: accepted.emergency_level },
       hospitals: hospitals.map(({ response, round, ...h }) => ({ ...h, accepted: response === 'accepted' })),
       hospitals_notified: targets.filter(t => t.round > 0).length,
-      timeline: events.filter(e => PUBLIC_EVENTS.has(e.type)).map(e => ({ type: e.type, at: e.created_at, data: publicEventData(e) })),
+      timeline: events.filter(e => PUBLIC_EVENTS.has(e.type)).map(e => ({ type: e.type, at: e.created_at, data: publicEventData(e, viewOnly) })),
     };
   }
 
-  function publicEventData(e) {
+  function publicEventData(e, viewOnly = false) {
     const d = e.data || {};
     switch (e.type) {
       case 'notified': case 'escalated': return { round: d.round, count: (d.hospitals || []).length };
@@ -549,7 +566,7 @@ export function createEmergencyService({ store, router, bus, notify = null, geoc
       case 'photo_assessed': return { severity: d.severity };
       case 'merged_report': return { report_count: d.report_count };
       case 'released': return {};
-      case 'cancelled': return { reason: d.reason };
+      case 'cancelled': return viewOnly ? {} : { reason: d.reason };
       default: return {};
     }
   }
@@ -644,7 +661,7 @@ export function createEmergencyService({ store, router, bus, notify = null, geoc
     // hospital / crew
     acceptAlert, declineAlert, releaseAlert, setStatus, updateLocation, issueCrewLink, setErStatus,
     // access + views
-    trackAllowed, crewAllowed, publicView, crewView, listForResponder, responderDetail, responderUpdate, responderPhoto,
+    trackRole, trackAllowed, crewAllowed, publicView, crewView, listForResponder, responderDetail, responderUpdate, responderPhoto,
     nearbyHospitals, rankCandidates,
     // lifecycle
     sweep, idle, getAlert: getOr404,

@@ -46,7 +46,7 @@ async function computeFallbackStats() {
     try {
       const res = await fetch('accident_data.json', { cache: 'no-store' });
       if (res.ok) {
-        rows = await res.json();
+        rows = (await res.json()).filter(r => r && r.status === 'active');
       }
     } catch (_) {}
   }

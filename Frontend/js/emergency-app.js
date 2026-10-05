@@ -219,17 +219,24 @@
     };
     try {
       const res = await E.api('/api/emergency', { method: 'POST', json: payload, auth: true });
-      E.rememberSos(res.alertId, res.trackToken);
+      // A report merged into someone else's alert gets a view-only link (no photos,
+      // no cancel). If this device raised that alert itself (e.g. a retry), keep
+      // using its own full-access link.
+      const mine = E.lastSos();
+      const own = res.merged && mine && mine.id === res.alertId;
+      const viewOnly = res.merged && !own;
+      const token = own ? mine.t : res.trackToken;
+      if (!own) E.rememberSos(res.alertId, res.trackToken);
       const file = $('photo').files[0];
-      if (file) {
+      if (file && !viewOnly) {
         $('send-label').innerHTML = 'SOS sent<small>Uploading photo…</small>';
         try {
           const blob = await E.shrinkImage(file, 1600);
-          const up = await fetch(`${E.API}/api/emergency/${encodeURIComponent(res.alertId)}/photo?token=${encodeURIComponent(res.trackToken)}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+          const up = await fetch(`${E.API}/api/emergency/${encodeURIComponent(res.alertId)}/photo?token=${encodeURIComponent(token)}`, { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
           if (!up.ok) throw new Error();
         } catch { E.toast('The photo could not be uploaded — you can add it from the tracking page.', 'warning'); }
       }
-      location.href = `track.html?id=${encodeURIComponent(res.alertId)}&t=${encodeURIComponent(res.trackToken)}${res.merged ? '&merged=1' : ''}`;
+      location.href = `track.html?id=${encodeURIComponent(res.alertId)}&t=${encodeURIComponent(token)}${viewOnly ? '&merged=1' : ''}`;
     } catch (e) {
       state.sending = false; updateSend();
       const offline = !navigator.onLine || !e.status;

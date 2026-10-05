@@ -434,14 +434,9 @@ CREATE POLICY "Public read active accidents" ON accidents
     ))
   );
 
+-- No INSERT policy: reports go through POST /api/reports (validation, rate
+-- limits, status 'pending'), never straight into the table.
 DROP POLICY IF EXISTS "Authenticated users submit accident reports" ON accidents;
-CREATE POLICY "Authenticated users submit accident reports" ON accidents
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    reporter_id = auth.uid()::text
-    AND status = 'pending'
-  );
 
 DROP POLICY IF EXISTS "Admin update accidents" ON accidents;
 CREATE POLICY "Admin update accidents" ON accidents
@@ -488,24 +483,10 @@ ALTER TABLE emergency_alerts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public and authenticated submit emergency alerts" ON emergency_alerts;
 -- No public INSERT: SOS alerts go through the API (validation + rate limits).
 
+-- No SELECT / UPDATE policies either: hospitals and admins work through the
+-- API (service role), which decides which hospital may see or change an alert.
 DROP POLICY IF EXISTS "Hospital and admin read emergency alerts" ON emergency_alerts;
-CREATE POLICY "Hospital and admin read emergency alerts" ON emergency_alerts
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth.jwt() -> 'app_metadata' ->> 'role' IN ('hospital', 'admin')
-  );
-
 DROP POLICY IF EXISTS "Hospital acknowledge emergency alerts" ON emergency_alerts;
-CREATE POLICY "Hospital acknowledge emergency alerts" ON emergency_alerts
-  FOR UPDATE
-  TO authenticated
-  USING (
-    auth.jwt() -> 'app_metadata' ->> 'role' IN ('hospital', 'admin')
-  )
-  WITH CHECK (
-    auth.jwt() -> 'app_metadata' ->> 'role' IN ('hospital', 'admin')
-  );
 
 -- 4. civic_issues table
 ALTER TABLE civic_issues ENABLE ROW LEVEL SECURITY;
@@ -521,14 +502,66 @@ CREATE POLICY "Authenticated users submit civic issues" ON civic_issues
   TO authenticated
   WITH CHECK (reporter_id = auth.uid()::text);
 
+-- A reporter may edit their own issue only while it is still open with no
+-- action note, and the edit must leave it that way. Status and the resolution
+-- note are set by admins (PATCH /api/civic/issues/:id).
 DROP POLICY IF EXISTS "Reporter or admin update civic issues" ON civic_issues;
-CREATE POLICY "Reporter or admin update civic issues" ON civic_issues
+
+DROP POLICY IF EXISTS "Reporter edit own open civic issues" ON civic_issues;
+CREATE POLICY "Reporter edit own open civic issues" ON civic_issues
   FOR UPDATE
   TO authenticated
-  USING (
-    reporter_id = auth.uid()::text
-    OR auth.jwt() -> 'app_metadata' ->> 'role' = 'admin'
-  );
+  USING (reporter_id = auth.uid()::text AND status = 'open' AND action_note IS NULL)
+  WITH CHECK (reporter_id = auth.uid()::text AND status = 'open' AND action_note IS NULL);
+
+DROP POLICY IF EXISTS "Admin update civic issues" ON civic_issues;
+CREATE POLICY "Admin update civic issues" ON civic_issues
+  FOR UPDATE
+  TO authenticated
+  USING (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin')
+  WITH CHECK (auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
+
+-- 5. Column privileges: the browser roles (anon / authenticated) may SELECT
+--    only public columns. Private columns (accidents.reporter_id, description,
+--    proof_url, rejection_reason, integrity, image_phash; hospitals.email,
+--    webhook_url, er_status_updated_by; civic_issues.reporter_id) and any
+--    column not listed here, including ones added later, are readable by the
+--    API only. Browser reads must list their columns: select('*') is refused.
+--    Direct browser reads today: trends-app.js (accidents), civic-app.js
+--    (civic_issues). Re-run after emergency.sql so its hospital columns exist.
+DO $$
+DECLARE
+  t        record;
+  all_cols text;
+  pub_cols text;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    RETURN; -- plain PostgreSQL without the Supabase API roles
+  END IF;
+  FOR t IN
+    SELECT * FROM (VALUES
+      ('accidents',    ARRAY['id', 'title', 'source', 'link', 'location', 'area', 'zone', 'severity', 'score',
+                             'date_raw', 'accident_date', 'has_coords', 'geom', 'status', 'created_at']),
+      ('hospitals',    ARRAY['id', 'name', 'phone', 'address', 'location', 'facility_type', 'emergency_level',
+                             'level_source', 'er_status', 'er_status_note', 'er_status_updated_at', 'verified']),
+      ('civic_issues', ARRAY['id', 'type', 'title', 'description', 'area', 'lat', 'lng', 'status', 'action_note',
+                             'created_at', 'updated_at'])
+    ) AS v(tbl, public_cols)
+  LOOP
+    SELECT string_agg(quote_ident(c.column_name::text), ', ' ORDER BY c.ordinal_position),
+           string_agg(quote_ident(c.column_name::text), ', ' ORDER BY c.ordinal_position)
+             FILTER (WHERE c.column_name::text = ANY (t.public_cols))
+      INTO all_cols, pub_cols
+      FROM information_schema.columns c
+     WHERE c.table_schema = 'public' AND c.table_name::text = t.tbl;
+    CONTINUE WHEN all_cols IS NULL; -- table does not exist yet
+    EXECUTE format('REVOKE SELECT ON public.%I FROM anon, authenticated', t.tbl);
+    EXECUTE format('REVOKE SELECT (%s) ON public.%I FROM anon, authenticated', all_cols, t.tbl);
+    IF pub_cols IS NOT NULL THEN
+      EXECUTE format('GRANT SELECT (%s) ON public.%I TO anon, authenticated', pub_cols, t.tbl);
+    END IF;
+  END LOOP;
+END $$;
 
 -- ─── Supabase Storage Buckets & Policies ──────────────────────────────────
 -- Enforces 5MB max file size and strictly allowed image MIME types.

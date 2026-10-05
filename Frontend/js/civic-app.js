@@ -67,9 +67,10 @@
     try {
       const sb = getSupabaseClient();
       if (sb) {
+        // Explicit columns: the anon key may only read public ones (reporter_id is private).
         const { data, error } = await sb
           .from('civic_issues')
-          .select('*')
+          .select('id, type, title, description, area, lat, lng, status, action_note, created_at, updated_at')
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data)) {

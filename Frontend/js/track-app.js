@@ -23,7 +23,7 @@
   }
   E.rememberSos(id, token);
   if (qs.get('merged') === '1') {
-    $('notices').innerHTML = '<div class="notice notice--info">Someone already reported this crash — your report was added to the same alert, so hospitals see both.</div>';
+    $('notices').innerHTML = '<div class="notice notice--info">Someone already reported this crash — your report was added to the same alert, so hospitals see both. This tracking link is view-only: the first reporter can add details or cancel the alert.</div>';
   }
 
   // ── Rendering ──────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@
     $('report-note').textContent = a.note || '';
     $('aid').innerHTML = E.firstAid(a.triage).map(t => `<li class="${['cpr', 'bleed', 'fire'].includes(t.k) ? 'urgent' : ''}"><strong>${E.esc(t.title)}</strong>${E.esc(t.text)}</li>`).join('');
     const open = ['new', 'accepted', 'dispatched', 'on_scene', 'transporting'].includes(a.status);
-    $('details-card').querySelector('details').hidden = !open;
+    $('details-card').querySelector('details').hidden = !open || !!a.view_only;
     $('cancel-card').hidden = !a.can_cancel;
   }
 

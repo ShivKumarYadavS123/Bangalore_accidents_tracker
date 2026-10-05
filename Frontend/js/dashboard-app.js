@@ -70,7 +70,7 @@
   async function loadJsonFallback() {
     const res = await fetch('accident_data.json', { cache: 'no-store' });
     if (!res.ok) throw new Error('accident_data.json not found');
-    const rows = await res.json();
+    const rows = (await res.json()).filter(r => r && r.status === 'active');
     return { type: 'FeatureCollection', features: rows.map(rowToFeature).filter(Boolean) };
   }
 

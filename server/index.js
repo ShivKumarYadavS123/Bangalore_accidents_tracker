@@ -15,15 +15,22 @@ import { createEmergencyFeatures } from './emergency/index.mjs';
 import { assessScenePhoto, processScenePhoto } from './emergency/vision.mjs';
 import { createAiFeatures } from './ai/index.mjs';
 import { ensureFreeModel } from './ai/llm.mjs';
+import { resolveSupabaseConfig, parseTrustProxy } from './config.js';
+import { readActiveAccidents, appendPublicAccident } from './accident-json.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://xcjzfifybnzocyjlktpo.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-export const supabase = (supabaseUrl && supabaseServiceKey)
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+// Supabase without the service-role key is a deployment mistake: refuse to
+// start instead of quietly running every query with the anon key.
+let supabaseConfig = null;
+try {
+  supabaseConfig = resolveSupabaseConfig(process.env);
+} catch (e) {
+  console.error(`Refusing to start: ${e.message}`);
+  process.exit(1);
+}
+export const supabase = supabaseConfig ? createClient(supabaseConfig.url, supabaseConfig.key) : null;
 
 const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 let pool = null;
@@ -115,6 +122,10 @@ const getStatsByAreaRpc = () => callStatsRpc('get_stats_by_area');
 
 const app = express();
 app.disable('x-powered-by');
+// Off unless TRUST_PROXY is set. Behind a reverse proxy set it (usually 1) so
+// rate limits see the client IP rather than the proxy's.
+const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+if (trustProxy !== undefined) app.set('trust proxy', trustProxy);
 const PORT = Number(process.env.PORT || 3000);
 
 const defaultOrigins = [
@@ -316,37 +327,35 @@ app.get('/api/accidents', limiterPublic, async (req, res) => {
     }
 
     if (!data || !data.features || !data.features.length) {
-      // Fallback to local / Supabase data
+      // Fallback to the local JSON copy (public, status 'active' records only)
       try {
-        if (fs.existsSync(JSON_PATH)) {
-          let list = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
-          if (severity && severity !== 'all') list = list.filter(d => d.severity === severity);
-          if (area && area !== 'all') list = list.filter(d => d.area === area);
-          if (zone && zone !== 'all') list = list.filter(d => d.zone === zone);
-          if (from) list = list.filter(d => !d.date || d.date >= from);
-          if (to) list = list.filter(d => !d.date || d.date <= to);
+        let list = readActiveAccidents(JSON_PATH);
+        if (severity && severity !== 'all') list = list.filter(d => d.severity === severity);
+        if (area && area !== 'all') list = list.filter(d => d.area === area);
+        if (zone && zone !== 'all') list = list.filter(d => d.zone === zone);
+        if (from) list = list.filter(d => !d.date || d.date >= from);
+        if (to) list = list.filter(d => !d.date || d.date <= to);
 
-          const features = list
-            .filter(d => d.hasCoords && d.lat != null && d.lng != null)
-            .map(d => ({
-              type: 'Feature',
-              geometry: { type: 'Point', coordinates: [d.lng, d.lat] },
-              properties: {
-                id: String(d.id),
-                title: d.title,
-                source: d.source,
-                link: d.link,
-                location: d.location,
-                area: d.area,
-                zone: d.zone,
-                severity: d.severity,
-                score: d.score,
-                date: d.date || '—',
-                isUser: Boolean(d.isUser || d.reporter_id)
-              }
-            }));
-          data = { type: 'FeatureCollection', features };
-        }
+        const features = list
+          .filter(d => d.hasCoords && d.lat != null && d.lng != null)
+          .map(d => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [d.lng, d.lat] },
+            properties: {
+              id: String(d.id),
+              title: d.title,
+              source: d.source,
+              link: d.link,
+              location: d.location,
+              area: d.area,
+              zone: d.zone,
+              severity: d.severity,
+              score: d.score,
+              date: d.date || '—',
+              isUser: Boolean(d.isUser || d.reporter_id)
+            }
+          }));
+        data = { type: 'FeatureCollection', features };
       } catch (jsonErr) {
         console.error('Fallback accidents error:', jsonErr.message);
       }
@@ -436,7 +445,7 @@ app.get('/api/meta', limiterPublic, async (_req, res) => {
       } catch (dbErr) { }
     }
 
-    const data = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
+    const data = readActiveAccidents(JSON_PATH);
     const areas = [...new Set(data.map(d => d.area).filter(Boolean))].sort();
     const zones = [...new Set(data.map(d => d.zone).filter(Boolean))].sort();
     const counts = {
@@ -473,8 +482,8 @@ app.get('/api/stats/trends', limiterPublic, async (_req, res) => {
       }
     }
 
-    if (!rows.length && fs.existsSync(JSON_PATH)) {
-      rows = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
+    if (!rows.length) {
+      rows = readActiveAccidents(JSON_PATH);
     }
 
     const monthly = {};
@@ -516,8 +525,8 @@ app.get('/api/stats/by-time', limiterPublic, async (_req, res) => {
       }
     }
 
-    if (!rows.length && fs.existsSync(JSON_PATH)) {
-      rows = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
+    if (!rows.length) {
+      rows = readActiveAccidents(JSON_PATH);
     }
 
     const byHour = new Array(24).fill(0);
@@ -569,8 +578,8 @@ app.get('/api/stats/by-area', limiterPublic, async (_req, res) => {
       }
     }
 
-    if (!rows.length && fs.existsSync(JSON_PATH)) {
-      rows = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
+    if (!rows.length) {
+      rows = readActiveAccidents(JSON_PATH);
     }
 
     const map = {};
@@ -611,7 +620,7 @@ async function loadRiskRows() {
       if (!error && data) return data;
     } catch (_) { }
   }
-  try { return JSON.parse(fs.readFileSync(JSON_PATH, 'utf8')); } catch (_) { return []; }
+  try { return readActiveAccidents(JSON_PATH); } catch (_) { return []; }
 }
 
 app.get('/api/risk/hotspots', limiterPublic, async (req, res) => {
@@ -888,7 +897,7 @@ app.post('/api/reports', limiterContributions, validateJwt, async (req, res) => 
     }
 
     if (saved) {
-      syncNewToJson(newRecord);
+      // User reports live in the database only; the public JSON copy never gets them.
       // Background duplicate / spam / fake-image screening for the moderation queue.
       ai.onReportCreated(nextId);
       return res.status(201).json({ id: nextId });
@@ -1399,7 +1408,7 @@ app.post('/api/admin/accidents', adminAuth, async (req, res) => {
       throw new Error('No database configured');
     }
 
-    syncNewToJson({ id: nextId, title: finalTitle, source: finalSource, link, location: newRecord.location, area: newRecord.area, lat, lng, score: newRecord.score, severity: newRecord.severity, date: extracted.date, hasCoords: newRecord.has_coords });
+    appendPublicAccident(JSON_PATH, { id: nextId, title: finalTitle, source: finalSource, link, location: newRecord.location, area: newRecord.area, lat, lng, score: newRecord.score, severity: newRecord.severity, date: extracted.date, hasCoords: newRecord.has_coords, status: 'active' });
     res.json({ ok: true, id: nextId });
   } catch (e) {
     console.error('Failed to upload/verify accident:', e);
@@ -1584,15 +1593,6 @@ function syncDeleteToJson(id) {
       fs.writeFileSync(JSON_PATH, JSON.stringify(filtered, null, 2), 'utf8');
     }
   } catch (e) { console.error('JSON sync delete error:', e.message); }
-}
-
-function syncNewToJson(record) {
-  try {
-    if (!fs.existsSync(JSON_PATH)) return;
-    const data = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
-    data.unshift(record);
-    fs.writeFileSync(JSON_PATH, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) { console.error('JSON sync new error:', e.message); }
 }
 
 // ── Start ──────────────────────────────────────────────────────────────────
