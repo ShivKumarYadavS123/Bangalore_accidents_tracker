@@ -1,0 +1,367 @@
+/**
+ * BAT News Agent: feed parsing, the run steps, AI budgets, the seen-list and
+ * the schedule. Feeds, articles and OpenRouter are all mocked.
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { createNewsAgent, parseTriage, TRIAGE_BATCH } from '../agent/news-agent.mjs';
+import { createImportPipeline, istDate } from '../agent/pipeline.mjs';
+import {
+  parseGoogleNewsRss, parseGdelt, googleNewsUrl, gdeltUrl, normalizeUrl, urlKey, linkVariants,
+  htmlToText, titleTokens, similarTitles, parseQueries, DEFAULT_QUERIES,
+} from '../agent/sources.mjs';
+import { resetBudget, clearLlmCache } from '../ai/llm.mjs';
+import {
+  GOOGLE_RSS, GOOGLE_ITEMS, GDELT_JSON, GDELT_URLS, CRASH_ARTICLE, googleRss, extraction,
+  makeFeedFetch, makeAi, makeStore, tmpDir, silentLogger,
+} from './fixtures/agent-fixtures.js';
+
+beforeEach(() => { process.env.OPENROUTER_API_KEY = 'test-key'; delete process.env.AI_DISABLE_LLM; resetBudget(); clearLlmCache(); });
+afterEach(() => { delete process.env.OPENROUTER_API_KEY; vi.useRealTimers(); vi.restoreAllMocks(); });
+
+const fullBudget = () => ({ limit: 45, used: 0, remaining: 45 });
+
+function makeAgent({ env = {}, store = makeStore(), fetchUrl = makeFeedFetch(), aiFetch = makeAi(), dataDir = tmpDir(), budgetStatus = fullBudget, geocode = async () => ({ lat: 12.9177, lng: 77.6233 }) } = {}) {
+  const pipeline = createImportPipeline({ store, geocode, inferZone: () => 'South', sleep: async () => {}, logger: silentLogger });
+  const agent = createNewsAgent({
+    pipeline, store, dataDir, fetchUrl, aiFetch, budgetStatus,
+    env: { OPENROUTER_API_KEY: 'test-key', AGENT_QUERIES: 'Bengaluru accident|ಬೆಂಗಳೂರು ಅಪಘಾತ', ...env },
+    logger: silentLogger, sleep: async () => {},
+  });
+  return { agent, store, fetchUrl, aiFetch, dataDir };
+}
+
+async function runOnce(agent, opts) {
+  const r = agent.runAgent(opts);
+  expect(r.started).toBe(true);
+  return r.done;
+}
+
+/** A made-up word per index, so generated headlines are distinct stories (digits alone are ignored). */
+const word = (i) => 'abcdefghijklmnopqrstuvwxyz'[i % 26] + 'abcdefghijklmnopqrstuvwxyz'[Math.floor(i / 26) % 26] + 'q';
+
+/** n distinct accident headlines with their own Google links. */
+const manyHeadlines = (n) => googleRss(Array.from({ length: n }, (_, i) => ({
+  title: `Biker injured in crash at ${word(i)}nagar junction near ${word(i + 300)}pura`,
+  publisher: 'Deccan Herald',
+  link: `https://news.google.com/rss/articles/CBMiMANY${i}`,
+})));
+
+describe('sources', () => {
+  it('parses a Google News RSS feed', () => {
+    const items = parseGoogleNewsRss(GOOGLE_RSS);
+    expect(items).toHaveLength(3);
+    expect(items[0]).toMatchObject({
+      source: 'google-news',
+      title: 'Two killed as lorry rams bike on Hosur Road',
+      url: 'https://news.google.com/rss/articles/CBMiAAA111?oc=5',
+      publisher: 'Deccan Herald',
+      publisherUrl: 'https://www.deccanherald.com',
+      snippet: '',
+    });
+    expect(items[0].publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(items[2]).toMatchObject({ title: 'ಹೆಬ್ಬಾಳ ಮೇಲ್ಸೇತುವೆ ಬಳಿ ಬೈಕ್‌ಗೆ ಬಸ್ ಡಿಕ್ಕಿ', publisher: 'Prajavani' });
+    expect(parseGoogleNewsRss('<rss><channel></channel></rss>')).toEqual([]);
+    expect(parseGoogleNewsRss('not xml')).toEqual([]);
+  });
+
+  it('parses a GDELT artlist response', () => {
+    const items = parseGdelt(JSON.stringify(GDELT_JSON));
+    expect(items).toHaveLength(2);
+    expect(items[0]).toEqual({
+      source: 'gdelt', title: 'Car overturns on NICE Road, driver injured', url: GDELT_URLS.crash,
+      publisher: null, publisherUrl: null, domain: 'thehindu.com', publishedAt: '2026-10-10T09:15:00.000Z', snippet: '',
+    });
+    expect(parseGdelt('{}')).toEqual([]);
+    expect(parseGdelt('')).toEqual([]);
+    expect(() => parseGdelt('Please limit requests to one every 5 seconds')).toThrow(/non-JSON/);
+  });
+
+  it('builds the feed URLs (Kannada edition for Kannada queries)', () => {
+    expect(googleNewsUrl('Bengaluru accident')).toBe('https://news.google.com/rss/search?q=Bengaluru%20accident%20when%3A2d&hl=en-IN&gl=IN&ceid=IN:en');
+    expect(googleNewsUrl('ಬೆಂಗಳೂರು ಅಪಘಾತ', 30)).toMatch(/when%3A30d&hl=kn&gl=IN&ceid=IN:kn$/);
+    const g = new URL(gdeltUrl(2));
+    expect(g.searchParams.get('query')).toBe('(accident OR crash OR collision) (Bengaluru OR Bangalore) sourcecountry:india');
+    expect(Object.fromEntries([...g.searchParams].filter(([k]) => k !== 'query'))).toEqual({ mode: 'artlist', format: 'json', timespan: '2d', maxrecords: '100', sort: 'datedesc' });
+  });
+
+  it('reads queries from AGENT_QUERIES', () => {
+    expect(parseQueries('')).toEqual(DEFAULT_QUERIES);
+    expect(DEFAULT_QUERIES).toEqual(['Bengaluru accident', 'Bengaluru road accident killed', 'Bengaluru crash injured', 'Bengaluru hit-and-run', 'ಬೆಂಗಳೂರು ಅಪಘಾತ']);
+    expect(parseQueries(' a | b ||c ')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('normalises URLs and compares them loosely', () => {
+    expect(normalizeUrl('https://www.thehindu.com/a.ece?utm_source=gdelt&id=3#comments')).toBe('https://www.thehindu.com/a.ece?id=3');
+    expect(normalizeUrl('https://news.google.com/rss/articles/X?oc=5')).toBe('https://news.google.com/rss/articles/X');
+    expect(normalizeUrl('javascript:alert(1)')).toBeNull();
+    expect(urlKey('http://www.a.com/x/')).toBe(urlKey('https://a.com/x'));
+    expect(linkVariants('https://a.com/x')).toEqual(expect.arrayContaining(['https://a.com/x', 'http://a.com/x', 'https://a.com/x/']));
+  });
+
+  it('extracts article text without menus and scripts', () => {
+    const text = htmlToText(CRASH_ARTICLE);
+    expect(text).toMatch(/overturned on NICE Road/);
+    expect(text).not.toMatch(/window\.ads|Home|Copyright/);
+  });
+
+  it('spots near-identical headlines', () => {
+    expect(similarTitles(titleTokens('Two killed as lorry rams bike on Hosur Road'), titleTokens('Two killed as lorry rams bike on Hosur road - Deccan Herald', 'Deccan Herald'))).toBe(true);
+    expect(similarTitles(titleTokens('Two killed as lorry rams bike on Hosur Road'), titleTokens('Car overturns on NICE Road, driver injured'))).toBe(false);
+  });
+});
+
+describe('triage replies', () => {
+  it('accepts 1-based indexes, numbers or objects, and rejects bad ones', () => {
+    expect([...parseTriage({ keep: [{ i: 2, reason: 'crash' }, 3] }, 3).entries()]).toEqual([[1, 'crash'], [2, '']]);
+    expect(() => parseTriage({ keep: [{ i: 4 }] }, 3)).toThrow(/Reply/);
+    expect(() => parseTriage({ items: [] }, 3)).toThrow(/Reply/);
+    expect(parseTriage({ keep: [] }, 3).size).toBe(0);
+  });
+});
+
+describe('News Agent run', () => {
+  it('searches, filters, triages, reads and saves pending rows', async () => {
+    const { agent, store, fetchUrl, aiFetch, dataDir } = makeAgent();
+    const run = await runOnce(agent);
+
+    expect(run.status).toBe('completed');
+    expect(run.sources.GDELT).toEqual({ ok: true, count: 2 });
+    expect(run.sources['Google News: Bengaluru accident']).toEqual({ ok: true, count: 3 });
+    // Mall + waterlogging fail the keyword filter; three crashes go to one triage call.
+    expect(aiFetch.calls.triage).toEqual([3]);
+    expect(aiFetch.calls.extract).toHaveLength(3);
+    expect(run.aiCalls).toBe(4);
+    expect(run.counts).toMatchObject({ imported: 3, not_accident: 2 });
+
+    const byLink = Object.fromEntries(store.inserted.map(r => [r.link, r]));
+    // GDELT: the publisher page was read; tracking parameters dropped from the link.
+    const hindu = byLink['https://www.thehindu.com/news/cities/bangalore/car-overturns-on-nice-road/article1.ece'];
+    expect(hindu).toMatchObject({ status: 'pending', reporter_id: null, source: 'The Hindu' });
+    expect(hindu.description.endsWith('(Found by BAT News Agent)')).toBe(true);
+    expect(aiFetch.calls.extract.some(u => u.includes('overturned on NICE Road near the Hosur Road junction'))).toBe(true);
+    // Google News: the Google page is never read, so the headline is used and the Google link kept.
+    const dh = byLink['https://news.google.com/rss/articles/CBMiAAA111'];
+    expect(dh).toMatchObject({ source: 'Deccan Herald', status: 'pending' });
+    const googleCalls = fetchUrl.mock.calls.filter(([u]) => u.startsWith('https://news.google.com/rss/articles/'));
+    expect(googleCalls.length).toBeGreaterThan(0);
+    for (const [u, opts] of googleCalls) expect(opts.skipBodyIf(u)).toBe(true);
+    expect(run.items.find(i => i.url.includes('CBMiAAA111')).reason).toMatch(/used the headline/);
+
+    // Files: run log, seen list and the IST daily counter.
+    const runsFile = JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-runs.json'), 'utf8'));
+    expect(runsFile[0].id).toBe(run.id);
+    const seen = JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-seen.json'), 'utf8'));
+    expect(seen).toEqual(expect.arrayContaining([urlKey(GOOGLE_ITEMS[0].link), urlKey(GDELT_URLS.other)]));
+    const state = JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-state.json'), 'utf8'));
+    expect(state).toMatchObject({ day: istDate(), aiCalls: 4 });
+    expect(run.items.every(i => ['imported', 'duplicate', 'not_accident', 'outside_bangalore', 'invalid_link', 'error'].includes(i.status))).toBe(true);
+  });
+
+  it('skips URLs it has already seen', async () => {
+    const dataDir = tmpDir();
+    const keys = [...GOOGLE_ITEMS.map(i => urlKey(i.link)), urlKey(GDELT_URLS.crash), urlKey(GDELT_URLS.other)];
+    fs.writeFileSync(path.join(dataDir, 'agent-seen.json'), JSON.stringify(keys));
+    const { agent, aiFetch, store } = makeAgent({ dataDir });
+    const run = await runOnce(agent);
+    expect(run.counts.alreadySeen).toBe(5);
+    expect(aiFetch).not.toHaveBeenCalled();
+    expect(store.inserted).toHaveLength(0);
+  });
+
+  it('a wiped seen-list never creates duplicate rows', async () => {
+    const store = makeStore();
+    const dataDir = tmpDir();
+    await runOnce(makeAgent({ store, dataDir }).agent);
+    expect(store.inserted).toHaveLength(3);
+    fs.rmSync(dataDir, { recursive: true, force: true });
+    // Even with the stored-link list unavailable, the save step's link match catches every repeat.
+    const second = makeAgent({ store: Object.assign(store, { allLinkKeys: async () => { throw new Error('db down'); } }), dataDir: tmpDir() });
+    const run = await runOnce(second.agent);
+    expect(store.inserted).toHaveLength(3);
+    expect(run.counts.imported).toBe(0);
+    expect(run.counts.duplicate).toBe(3);
+  });
+
+  it('sends at most 30 headlines per triage call', async () => {
+    const { agent, aiFetch } = makeAgent({ fetchUrl: makeFeedFetch({ gdelt: { articles: [] }, rss: manyHeadlines(45) }), aiFetch: makeAi({ keep: () => [] }) });
+    const run = await runOnce(agent);
+    expect(TRIAGE_BATCH).toBe(30);
+    expect(aiFetch.calls.triage).toEqual([30, 15]);
+    expect(run.aiCalls).toBe(2);
+    expect(run.counts.not_accident).toBe(45);
+  });
+
+  it('stops at the per-run AI budget and logs "budget reached"', async () => {
+    const { agent, aiFetch, dataDir } = makeAgent({ env: { AGENT_MAX_AI_CALLS_PER_RUN: '1' }, fetchUrl: makeFeedFetch({ gdelt: { articles: [] }, rss: manyHeadlines(45) }) });
+    const run = await runOnce(agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(run.aiCalls).toBe(1);
+    expect(run.status).toBe('budget_reached');
+    expect(run.log.some(l => /budget reached/.test(l))).toBe(true);
+    expect(run.counts.imported).toBe(0);
+    expect(run.counts.deferred).toBeGreaterThan(0);
+    // Deferred items are not marked as seen, so a later run picks them up.
+    const seen = JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-seen.json'), 'utf8'));
+    expect(seen).not.toContain(urlKey('https://news.google.com/rss/articles/CBMiMANY40'));
+  });
+
+  it('stops at the daily AI budget (IST day, kept across runs)', async () => {
+    const dataDir = tmpDir();
+    fs.writeFileSync(path.join(dataDir, 'agent-state.json'), JSON.stringify({ day: istDate(), aiCalls: 19 }));
+    const { agent, aiFetch } = makeAgent({ dataDir, env: { AGENT_DAILY_AI_BUDGET: '20' } });
+    const run = await runOnce(agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('budget_reached');
+    expect(run.stopReason).toMatch(/daily AI limit/);
+    expect(agent.status().aiCallsToday).toBe(20);
+    const again = await runOnce(agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(again.aiCalls).toBe(0);
+  });
+
+  it('resets the daily count on a new IST day', async () => {
+    const dataDir = tmpDir();
+    fs.writeFileSync(path.join(dataDir, 'agent-state.json'), JSON.stringify({ day: '2020-01-01', aiCalls: 20 }));
+    const { agent } = makeAgent({ dataDir });
+    expect(agent.status().aiCallsToday).toBe(0);
+  });
+
+  it('never starts an AI step when fewer than 10 site-wide calls are left', async () => {
+    const { agent, aiFetch, store } = makeAgent({ budgetStatus: () => ({ limit: 45, used: 36, remaining: 9 }) });
+    const run = await runOnce(agent);
+    expect(aiFetch).not.toHaveBeenCalled();
+    expect(run.status).toBe('budget_reached');
+    expect(run.stopReason).toMatch(/site-wide/);
+    expect(store.inserted).toHaveLength(0);
+  });
+
+  it('a failing source is logged and skipped', async () => {
+    const { agent, store } = makeAgent({ fetchUrl: makeFeedFetch({ fail: ['api.gdeltproject.org', 'hl=kn'] }) });
+    const run = await runOnce(agent);
+    expect(run.status).toBe('completed');
+    expect(run.sources.GDELT).toMatchObject({ ok: false, count: 0, error: expect.stringMatching(/ECONNREFUSED/) });
+    expect(run.sources['Google News: ಬೆಂಗಳೂರು ಅಪಘಾತ'].ok).toBe(false);
+    expect(run.sources['Google News: Bengaluru accident'].ok).toBe(true);
+    expect(store.inserted.length).toBe(2);
+    expect(run.log.some(l => /GDELT: failed/.test(l))).toBe(true);
+  });
+
+  it('a 429 from OpenRouter stops the run', async () => {
+    const { agent, aiFetch, store } = makeAgent({ aiFetch: makeAi({ status: 429 }) });
+    const run = await runOnce(agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('rate_limited');
+    expect(run.log.some(l => /rate limit/.test(l))).toBe(true);
+    expect(store.inserted).toHaveLength(0);
+  });
+
+  it('runs never overlap', async () => {
+    let release;
+    const hold = new Promise(r => { release = r; });
+    const { agent } = makeAgent({ fetchUrl: makeFeedFetch({ hold }) });
+    const first = agent.runAgent();
+    expect(first.started).toBe(true);
+    expect(agent.status().running).toBe(true);
+    expect(agent.runAgent()).toMatchObject({ started: false, reason: 'running', runId: first.runId });
+    release();
+    await first.done;
+    expect(agent.status().running).toBe(false);
+    const third = agent.runAgent();
+    expect(third.started).toBe(true);
+    await third.done;
+  });
+
+  it('backfill searches the last N days (max 30) under the same budgets', async () => {
+    const { agent, fetchUrl } = makeAgent();
+    const run = await runOnce(agent, { backfillDays: 45 });
+    expect(run).toMatchObject({ trigger: 'backfill', days: 30 });
+    const urls = fetchUrl.mock.calls.map(([u]) => u);
+    expect(urls.some(u => u.includes('when%3A30d'))).toBe(true);
+    expect(urls.some(u => u.includes('timespan=30d&maxrecords=250'))).toBe(true);
+  });
+
+  it('articles over the read limit wait for the next run without another triage call', async () => {
+    const { agent, aiFetch, store } = makeAgent({ env: { AGENT_MAX_READS_PER_RUN: '1' } });
+    const first = await runOnce(agent);
+    expect(first.counts.imported).toBe(1);
+    expect(agent.status().queueLength).toBe(2);
+    const second = await runOnce(agent);
+    expect(aiFetch.calls.triage).toEqual([3]);
+    expect(second.counts.imported).toBe(1);
+    expect(store.inserted).toHaveLength(2);
+  });
+
+  it('marks the possible duplicate when a nearby same-day record exists', async () => {
+    const store = makeStore({ nearby: [{ id: '812', distance_m: 90 }] });
+    const { agent } = makeAgent({ store, fetchUrl: makeFeedFetch({ rss: googleRss([GOOGLE_ITEMS[0]]), gdelt: { articles: [] } }) });
+    const run = await runOnce(agent);
+    expect(run.items.find(i => i.status === 'imported').reason).toMatch(/possible duplicate of #812/);
+    expect(store.inserted[0].description.startsWith('Possible duplicate of #812.')).toBe(true);
+  });
+
+  it('refuses to run without a database or AI key, and says why', () => {
+    const noKey = makeAgent({ env: { OPENROUTER_API_KEY: '' } }).agent;
+    expect(noKey.runAgent()).toMatchObject({ started: false, reason: 'not_ready' });
+    expect(noKey.status()).toMatchObject({ ready: false, notReadyReason: 'OPENROUTER_API_KEY is not set' });
+    const noDb = makeAgent({ store: { ...makeStore(), available: () => false } }).agent;
+    expect(noDb.status().notReadyReason).toBe('no database configured');
+  });
+});
+
+describe('News Agent schedule', () => {
+  it('AGENT_ENABLED=false starts nothing', async () => {
+    vi.useFakeTimers();
+    const { agent, fetchUrl } = makeAgent({ env: { AGENT_ENABLED: 'false' } });
+    expect(agent.start()).toBe(false);
+    await vi.advanceTimersByTimeAsync(4 * 3600 * 1000);
+    expect(fetchUrl).not.toHaveBeenCalled();
+    expect(agent.runAgent()).toMatchObject({ started: false, reason: 'disabled' });
+    expect(agent.status()).toMatchObject({ enabled: false, nextRunAt: null });
+  });
+
+  it('first run 2 minutes after startup, then every AGENT_INTERVAL_HOURS', async () => {
+    vi.useFakeTimers();
+    const { agent, fetchUrl } = makeAgent({ env: { AGENT_INTERVAL_HOURS: '3' } });
+    expect(agent.start()).toBe(true);
+    const t0 = Date.now();
+    expect(Date.parse(agent.status().nextRunAt) - t0).toBe(2 * 60 * 1000);
+    await vi.advanceTimersByTimeAsync(119 * 1000);
+    expect(fetchUrl).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2 * 1000);
+    await vi.waitFor(() => expect(agent.status().lastRuns).toHaveLength(1));
+    expect(agent.status().lastRuns[0].trigger).toBe('schedule');
+    const next = Date.parse(agent.status().nextRunAt);
+    expect(next - Date.now()).toBeGreaterThan(3 * 3600 * 1000 - 5000);
+    agent.stop();
+    expect(agent.status().nextRunAt).toBeNull();
+  });
+
+  it('a scheduled tick while a manual run is going does not start a second run', async () => {
+    vi.useFakeTimers();
+    let release;
+    const hold = new Promise(r => { release = r; });
+    const { agent } = makeAgent({ fetchUrl: makeFeedFetch({ hold }) });
+    const manual = agent.runAgent();
+    agent.start();
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000 + 10);
+    expect(agent.isRunning()).toBe(true);
+    release();
+    await manual.done;
+    expect(agent.status().lastRuns).toHaveLength(1);
+    expect(agent.status().nextRunAt).not.toBeNull();
+    agent.stop();
+  });
+
+  it('minimum interval is 1 hour', () => {
+    const { agent } = makeAgent({ env: { AGENT_INTERVAL_HOURS: '0.1' } });
+    expect(agent.config.intervalHours).toBe(1);
+  });
+});
+
+describe('extraction fixture sanity', () => {
+  it('is valid for today', () => {
+    expect(extraction().date).toBe(istDate());
+  });
+});

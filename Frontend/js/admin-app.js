@@ -115,6 +115,8 @@
    */
   // Integrity UI (admin-integrity.js) uses the same authenticated fetch.
   setTimeout(() => window.BATIntegrity?.init(authenticatedFetch, API), 0);
+  // News Agent panel + Import from X (admin-agent.js); imports refresh the table.
+  setTimeout(() => window.BATAgent?.init({ fetch: authenticatedFetch, api: API, toast, onChange: () => loadData(curPage) }), 0);
 
   async function authenticatedFetch(url, options = {}) {
     // Merge auth headers with any additional headers
@@ -399,25 +401,29 @@
       const coordHtml = r.lat && r.lng
         ? `<span>${parseFloat(r.lat).toFixed(4)}, ${parseFloat(r.lng).toFixed(4)}</span>`
         : `<span class="no-coords">No coords</span>`;
-      const stClass = r.status === 'active' ? 'status-active' : 'status-hidden';
-      const stLabel = r.status === 'active' ? '● Active' : '○ Hidden';
+      const stClass = r.status === 'active' ? 'status-active' : r.status === 'pending' ? 'status-pending' : 'status-hidden';
+      const stLabel = r.status === 'active' ? '● Active' : r.status === 'pending' ? '◌ Pending' : '○ Hidden';
       // Checkbox cell for bulk actions
       const checkboxCell = `<td><input type="checkbox" class="row-select" data-id="${esc(r.id)}" aria-label="Select ${esc(r.id)}"></td>`;
+
+      // Where the row came from: citizen report, News Agent or an X post.
+      const kind = window.BATAgent?.sourceKind(r) || (r.reporter_id ? 'user' : null);
+      const sourceBadge = window.BATAgent?.sourceBadgeHtml(r) || '';
 
       // A compact snapshot of this row's fields for the Review modal / buttons.
       const reviewData = jsonAttr({
         id: r.id, title: r.title, area: r.area || '', location: r.location || '',
         severity: r.severity, date: r.date || r.date_raw || '', description: r.description || '',
         proof_url: r.proof_url || '', reporter_id: r.reporter_id || '', created_at: r.created_at || '',
-        lat: r.lat || '', lng: r.lng || '', status: r.status,
+        lat: r.lat || '', lng: r.lng || '', status: r.status, source: r.source || '', link: r.link || '', kind: kind || '',
       });
 
-      // Approve/Reject/Review buttons for pending user reports
+      // Review/Approve/Reject for every pending row; the AI integrity check is for citizen reports only.
       let pendingBtns = '';
-      if (r.status === 'pending' && r.reporter_id) {
+      if (r.status === 'pending') {
         pendingBtns = `
           <button class="btn-review" data-action="review" data-row='${reviewData}'>Review</button>
-          <span class="integrity-pill pending" data-integrity-id="${esc(r.id)}">AI check…</span>
+          ${r.reporter_id ? `<span class="integrity-pill pending" data-integrity-id="${esc(r.id)}">AI check…</span>` : ''}
           <button class="btn-approve" data-action="approve" data-id="${esc(r.id)}">Approve</button>
           <button class="btn-reject" data-action="reject" data-id="${esc(r.id)}">Reject</button>
         `;
@@ -434,7 +440,7 @@
         ${checkboxCell}
         <td class="cell-id">${esc(r.id)}</td>
         <td class="cell-title">${titleHtml}</td>
-        <td class="cell-source">${esc(r.source || '—')}</td>
+        <td class="cell-source">${esc(r.source || '—')}${sourceBadge}</td>
         <td class="cell-date">${esc(r.date || '—')}</td>
         <td class="cell-loc">${esc(r.location || r.area || '—')}${proofLink}</td>
         <td><span class="sev-badge ${sevClass}">${sevLabel}</span></td>
@@ -1127,6 +1133,35 @@
       return;
     }
 
+    // X posts are never scraped: they go through the X importer (official oEmbed) and land as pending.
+    if (link && window.BATAgent?.isXHost(link)) {
+      if (!window.BATAgent.isXPostUrl(link)) {
+        errEl.textContent = 'Only X post links (https://x.com/<handle>/status/<id>) can be imported.';
+        errEl.hidden = false;
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Importing from X…';
+      try {
+        const [res] = await window.BATAgent.importX([link]);
+        if (res && res.status === 'imported') {
+          closeAddModal();
+          toast(`Imported from X as pending record #${res.id}`, 'success', 5000);
+          loadData(1);
+        } else {
+          errEl.textContent = `X import: ${window.BATAgent.statusLabel(res?.status || 'error')} (${res?.reason || 'no result'})`;
+          errEl.hidden = false;
+        }
+      } catch (e) {
+        errEl.textContent = 'X import failed: ' + e.message;
+        errEl.hidden = false;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Verify & Upload';
+      }
+      return;
+    }
+
     saveBtn.disabled = true;
     saveBtn.textContent = link ? 'Scraping & Verifying…' : 'Verifying with DeepSeek…';
 
@@ -1218,8 +1253,11 @@
     const addModalEl = document.getElementById('add-modal');
     const reviewModal = document.getElementById('review-modal');
     const rejectModal = document.getElementById('reject-modal');
+    const agentModal = document.getElementById('agent-modal');
+    const xModal = document.getElementById('x-import-modal');
     return !editModal.hidden || !confirmModal.hidden || !addModalEl.hidden ||
-      !(reviewModal?.hidden ?? true) || !(rejectModal?.hidden ?? true);
+      !(reviewModal?.hidden ?? true) || !(rejectModal?.hidden ?? true) ||
+      !(agentModal?.hidden ?? true) || !(xModal?.hidden ?? true);
   }
 
   /**
@@ -1371,15 +1409,28 @@
   function openReview(row) {
     const modal = document.getElementById('review-modal');
     modal.dataset.id = row.id;
+    const kind = row.kind || (row.reporter_id ? 'user' : '');
+    const isUser = kind === 'user';
+    const titles = { user: 'Review User Submission', agent: 'Review News Agent Find', x: 'Review X Post Import' };
+    const titleEl = document.getElementById('review-title');
+    if (titleEl) titleEl.textContent = titles[kind] || 'Review Pending Record';
 
     const photoWrap = document.getElementById('review-photo-wrap');
-    photoWrap.innerHTML = row.proof_url
-      ? `<img class="review-photo" src="${esc(row.proof_url)}" alt="Uploaded proof photo">`
-      : `<div class="review-photo-empty">No photo was attached to this report.</div>`;
+    photoWrap.innerHTML = !isUser ? ''
+      : row.proof_url
+        ? `<img class="review-photo" src="${esc(row.proof_url)}" alt="Uploaded proof photo">`
+        : `<div class="review-photo-empty">No photo was attached to this report.</div>`;
 
-    const coords = (row.lat && row.lng) ? `${parseFloat(row.lat).toFixed(5)}, ${parseFloat(row.lng).toFixed(5)}` : 'No coordinates';
+    const coords = (row.lat && row.lng) ? `${parseFloat(row.lat).toFixed(5)}, ${parseFloat(row.lng).toFixed(5)}` : 'No coordinates (use Edit to set the pin)';
     const submittedAt = row.created_at ? new Date(row.created_at).toLocaleString() : '—';
     const reporter = row.reporter_id ? row.reporter_id.slice(0, 8) + '…' : '—';
+    const sourceHref = /^https?:\/\//i.test(row.link || '') ? row.link : '';
+    const sourceValue = sourceHref
+      ? `<a href="${esc(sourceHref)}" target="_blank" rel="noopener noreferrer">${esc(row.source || 'Open source')} ↗</a>`
+      : esc(row.source || '—');
+    const lastItem = isUser
+      ? `<div class="review-info-item"><div class="ri-label">Reporter ID</div><div class="ri-value">${esc(reporter)}</div></div>`
+      : `<div class="review-info-item"><div class="ri-label">Source</div><div class="ri-value">${sourceValue}</div></div>`;
 
     document.getElementById('review-info').innerHTML = `
       <div class="review-info-grid">
@@ -1389,12 +1440,16 @@
         <div class="review-info-item"><div class="ri-label">Area</div><div class="ri-value">${esc(row.area || '—')}</div></div>
         <div class="review-info-item"><div class="ri-label">Accident Date</div><div class="ri-value">${esc(row.date || '—')}</div></div>
         <div class="review-info-item"><div class="ri-label">Coordinates</div><div class="ri-value">${esc(coords)}</div></div>
-        <div class="review-info-item"><div class="ri-label">Submitted</div><div class="ri-value">${esc(submittedAt)}</div></div>
-        <div class="review-info-item"><div class="ri-label">Reporter ID</div><div class="ri-value">${esc(reporter)}</div></div>
+        <div class="review-info-item"><div class="ri-label">${isUser ? 'Submitted' : 'Added'}</div><div class="ri-value">${esc(submittedAt)}</div></div>
+        ${lastItem}
       </div>`;
 
+    const descLabel = document.getElementById('review-desc-label');
+    if (descLabel) descLabel.textContent = isUser ? 'Description (from reporter)' : 'Summary (written by the AI: check the source before approving)';
     document.getElementById('review-description').textContent = row.description || 'No description provided.';
-    window.BATIntegrity?.renderPanel(document.getElementById('review-integrity'), row.id);
+    const integrityBox = document.getElementById('review-integrity');
+    if (isUser) window.BATIntegrity?.renderPanel(integrityBox, row.id);
+    else integrityBox.innerHTML = '';
     document.getElementById('review-reject-reason').value = '';
     document.getElementById('review-error').hidden = true;
 

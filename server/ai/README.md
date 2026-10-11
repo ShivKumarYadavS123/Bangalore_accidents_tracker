@@ -23,6 +23,8 @@ Five features, all built on **free** services only (no paid API anywhere).
 
 When the LLM is unavailable (no key, free quota used, provider rate-limited), every feature still works: Ask BAT switches to a rule-based planner and the digest uses a data-generated template.
 
+The BAT News Agent and Import from X (`server/agent/`) use the same free budget: the agent takes at most `AGENT_DAILY_AI_BUDGET` calls a day (default 20) and never starts an AI step when fewer than 10 site-wide calls are left. See `server/agent/README.md`.
+
 ## Settings (`server/.env`, all optional)
 
 ```

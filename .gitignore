@@ -14,3 +14,7 @@ Thumbs.db
 
 # AI feature caches (downloaded ONNX models, digests, integrity results)
 server/.cache/
+
+# News Agent working files (seen URLs, daily AI count, run logs); safe to delete
+server/data/agent-*.json
+server/data/agent-*.json.*.tmp

@@ -34,6 +34,22 @@
 
   function emptyFC() { return { type: 'FeatureCollection', features: [] }; }
 
+  // Where a record came from, for the popup and detail panel. These are news
+  // reports and Traffic Police posts added after an admin's review, so the
+  // wording never claims they are live or real-time.
+  function sourceInfo(p) {
+    const link = String(p.link || '');
+    const href = link !== '#' && /^https?:\/\//i.test(link) ? link : null;
+    if (href && /^https:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/\d+/i.test(href)) {
+      const handle = (String(p.source || '').match(/^X: @([A-Za-z0-9_]{1,15})$/) || [])[1];
+      return { label: handle ? `@${handle} on X` : 'Bengaluru Traffic Police on X', linkText: 'View post on X ↗', href };
+    }
+    if (p.foundBy === 'agent') {
+      return { label: `${p.source || 'News report'} (found by BAT News Agent)`, linkText: 'Read article ↗', href };
+    }
+    return { label: p.source || '—', linkText: 'Read article ↗', href };
+  }
+
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -295,7 +311,7 @@
 
         // Show Leaflet-like styled popup on canvas
         const sev = p.severity;
-        const hasLink = p.link && p.link !== '#' && /^https?:\/\//i.test(p.link);
+        const src = sourceInfo(p);
         const html = `
           <div class="popup-inner">
             <span class="popup-sev popup-sev--${sev}">${sevLabel(sev)}</span>
@@ -304,8 +320,9 @@
               <div><span>Date: </span>${esc(String(p.date))}</div>
               <div><span>Area: </span>${esc(p.area || '—')}</div>
               <div><span>Zone: </span>${esc(p.zone || '—')}</div>
+              <div><span>Source: </span>${esc(src.label)}</div>
             </div>
-            ${hasLink ? `<a class="popup-link" href="${esc(p.link)}" target="_blank" rel="noopener">Read article ↗</a>` : ''}
+            ${src.href ? `<a class="popup-link" href="${esc(src.href)}" target="_blank" rel="noopener noreferrer">${esc(src.linkText)}</a>` : ''}
           </div>
         `;
 
@@ -513,7 +530,7 @@
     const body  = document.getElementById('detail-panel-body');
     if (!panel || !body) return;
     const sev = p.severity;
-    const hasLink = p.link && p.link !== '#' && /^https?:\/\//i.test(p.link);
+    const src = sourceInfo(p);
     body.innerHTML = `
       <span class="dp-badge dp-badge--${sev}">${sevLabel(sev)}</span>
       <div class="dp-headline">${esc(p.title)}</div>
@@ -522,9 +539,9 @@
         <div class="dp-row"><span class="dp-key">Area</span>    <span class="dp-val">${esc(p.area || '—')}</span></div>
         <div class="dp-row"><span class="dp-key">Zone</span>    <span class="dp-val">${esc(p.zone || '—')}</span></div>
         <div class="dp-row"><span class="dp-key">Location</span><span class="dp-val">${esc(p.location || '—')}</span></div>
-        <div class="dp-row"><span class="dp-key">Source</span>  <span class="dp-val">${esc(p.source || '—')}${p.isUser ? ' <em>(user report)</em>' : ''}</span></div>
+        <div class="dp-row"><span class="dp-key">Source</span>  <span class="dp-val">${esc(src.label)}${p.isUser ? ' <em>(user report)</em>' : ''}</span></div>
       </div>
-      ${hasLink ? `<a class="dp-link" href="${esc(p.link)}" target="_blank" rel="noopener">Read full article ↗</a>` : ''}
+      ${src.href ? `<a class="dp-link" href="${esc(src.href)}" target="_blank" rel="noopener noreferrer">${esc(src.linkText)}</a>` : ''}
     `;
     panel.classList.add('open');
     panel.setAttribute('aria-hidden', 'false');

@@ -15,6 +15,7 @@ import { createEmergencyFeatures } from './emergency/index.mjs';
 import { assessScenePhoto, processScenePhoto } from './emergency/vision.mjs';
 import { createAiFeatures } from './ai/index.mjs';
 import { ensureFreeModel } from './ai/llm.mjs';
+import { createNewsFeatures } from './agent/index.mjs';
 import { resolveSupabaseConfig, parseTrustProxy } from './config.js';
 import { readActiveAccidents, appendPublicAccident } from './accident-json.js';
 
@@ -170,6 +171,18 @@ const emergency = createEmergencyFeatures({
   hospitalsJsonPath: path.join(__dirname, 'seed-hospitals.json'),
   config: { publicBaseUrl: (process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '') },
 });
+
+// ── BAT News Agent (scheduled news search → pending accidents) + X paste box ──
+// Free sources only (Google News RSS, GDELT, X oEmbed); everything lands as pending.
+const news = createNewsFeatures({
+  supabase,
+  q: pool ? q : null,
+  nextAccidentId,
+  geocode: geocodeLocation,
+  inferZone,
+  dataDir: path.join(__dirname, 'data'),
+});
+app.use(news.invalidateOnWrite);
 
 // Rate limiting for public API endpoints (100 requests per 15 minutes per IP)
 const limiterPublic = rateLimit({
@@ -389,6 +402,8 @@ app.get('/api/accidents', limiterPublic, async (req, res) => {
       return res.send(csv);
     }
 
+    // Credit the News Agent on approved rows it found (map popup label).
+    if (data?.features?.length) data = await news.tagAgentRows(data);
     res.json(data || { type: 'FeatureCollection', features: [] });
   } catch (e) {
     console.error('/api/accidents error:', e.message);
@@ -1228,16 +1243,15 @@ app.delete('/api/admin/accidents/:id', adminAuth, async (req, res) => {
   }
 });
 
-// Get pending reports (user-submitted) for admin review
+// Every pending row for admin review: citizen reports, News Agent finds and X imports.
 app.get('/api/admin/reports/pending', adminAuth, async (_req, res) => {
   try {
     if (supabase) {
       try {
         const { data, error } = await supabase
           .from('accidents')
-          .select('id, title, location, area, severity, accident_date, reporter_id, description')
+          .select('id, title, source, link, location, area, severity, accident_date, reporter_id, description')
           .eq('status', 'pending')
-          .not('reporter_id', 'is', null)
           .order('accident_date', { ascending: false });
         if (!error && data) return res.json(data);
       } catch (sbErr) {
@@ -1247,9 +1261,9 @@ app.get('/api/admin/reports/pending', adminAuth, async (_req, res) => {
 
     if (pool) {
       const data = await q(
-        `SELECT id, title, location, area, severity, accident_date, reporter_id, description
+        `SELECT id, title, source, link, location, area, severity, accident_date, reporter_id, description
          FROM accidents
-         WHERE status = 'pending' AND reporter_id IS NOT NULL
+         WHERE status = 'pending'
          ORDER BY accident_date DESC NULLS LAST`
       );
       return res.json(data || []);
@@ -1342,6 +1356,16 @@ app.post('/api/admin/accidents', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'Either Article Link, or Title and Content are required.' });
     }
 
+    // x.com / twitter.com pages are never scraped: posts go through X's oEmbed importer.
+    if (link && news.isXHost(link)) {
+      if (!news.parseXStatusUrl(link)) {
+        return res.status(400).json({ error: 'Only X post links (https://x.com/<handle>/status/<id>) can be imported.' });
+      }
+      const [result] = await news.xImporter.importLinks([link]);
+      if (result.status === 'imported') return res.json({ ok: true, id: result.id, status: result.status, reason: result.reason, pending: true });
+      return res.status(result.status === 'error' ? 502 : 400).json({ error: result.reason, status: result.status });
+    }
+
     if (link) {
       const response = await safeFetch(link, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
@@ -1428,8 +1452,13 @@ async function nextAccidentId(fallback) {
     if (pool) {
       ids = (await q(`SELECT id FROM accidents WHERE id ~ '^[0-9]+$'`)).map(r => r.id);
     } else if (supabase) {
-      const { data, error } = await supabase.from('accidents').select('id').range(0, 99999);
-      if (!error && data) ids = data.map(r => r.id);
+      // Supabase returns at most 1000 rows per request, so page through every id.
+      for (let from = 0; from < 500000; from += 1000) {
+        const { data, error } = await supabase.from('accidents').select('id').order('id', { ascending: true }).range(from, from + 999);
+        if (error || !data) break;
+        ids.push(...data.map(r => r.id));
+        if (data.length < 1000) break;
+      }
     }
     const max = Math.max(0, ...ids.map(v => (/^\d+$/.test(v) ? parseInt(v, 10) : 0)));
     return max > 0 ? String(max + 1) : fallback;
@@ -1599,9 +1628,11 @@ function syncDeleteToJson(id) {
 
 ai.registerRoutes(app, { validateJwt, adminAuth });
 emergency.registerRoutes(app);
+news.registerRoutes(app, { adminAuth, readLimiter: limiterPublic, writeLimiter: limiterAdminSlug });
 
 app.listen(PORT, () => {
   console.log(`BAT API listening on http://localhost:${PORT}`);
   ai.prewarm();
   emergency.start();
+  news.start();
 });
