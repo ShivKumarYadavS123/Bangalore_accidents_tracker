@@ -169,7 +169,7 @@ export function makeStore({ rows = [], nearby = [], failLookups = false, failAll
       store.insertCalls.push({ record, loc });
       return id;
     },
-    async agentRowIds() { return new Set(store.rows.filter(r => r.status === 'active' && String(r.description || '').includes('(Found by BAT News Agent)')).map(r => r.id)); },
+    async agentRowIds() { return new Set(store.rows.filter(r => r.status === 'active' && !r.reporter_id && String(r.description || '').includes('(Found by BAT News Agent)')).map(r => r.id)); },
   };
   return store;
 }

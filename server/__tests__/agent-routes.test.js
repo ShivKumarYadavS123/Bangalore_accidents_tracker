@@ -176,6 +176,57 @@ describe('map tagging for News Agent rows', () => {
     expect(q.mock.calls[0][1]).toEqual(['%(Found by BAT News Agent)%']);
   });
 
+  // Rows for the tagging lookup: only id 5 is an approved row the agent found.
+  const MARKER = 'A biker died near Silk Board. (Found by BAT News Agent)';
+  const TAG_ROWS = [
+    { id: '5', status: 'active', reporter_id: null, description: MARKER },
+    { id: '6', status: 'active', reporter_id: 'user-1', description: `I copied this: ${MARKER}` }, // citizen report quoting the marker
+    { id: '7', status: 'pending', reporter_id: null, description: MARKER },
+    { id: '8', status: 'active', reporter_id: null, description: 'Old news row' },
+  ];
+  const featuresFor = () => ({ features: TAG_ROWS.map(r => ({ properties: { id: r.id } })) });
+  const tagged = (fc) => fc.features.filter(f => f.properties.foundBy === 'agent').map(f => f.properties.id);
+
+  /** Supabase query builder over an in-memory table that really applies eq / is / like. */
+  function memorySupabase(rows) {
+    return {
+      from: () => {
+        const filters = [];
+        const b = {
+          select: () => b,
+          eq: (col, v) => { filters.push(r => r[col] === v); return b; },
+          is: (col, v) => { filters.push(r => (r[col] ?? null) === v); return b; },
+          like: (col, pattern) => {
+            const re = new RegExp(`^${pattern.split('%').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`);
+            filters.push(r => re.test(r[col] ?? ''));
+            return b;
+          },
+          order: () => b,
+          range: async (from, to) => ({ data: rows.filter(r => filters.every(f => f(r))).slice(from, to + 1), error: null }),
+        };
+        return b;
+      },
+    };
+  }
+
+  /** Postgres stand-in that applies only the conditions actually written in the SQL. */
+  const memoryPg = (rows) => vi.fn(async (sql, params = []) => rows.filter(r =>
+    (!/status = 'active'/.test(sql) || r.status === 'active')
+    && (!/reporter_id IS NULL/.test(sql) || r.reporter_id == null)
+    && (!/description LIKE \$1/.test(sql) || String(r.description || '').includes(params[0].replace(/%/g, '')))));
+
+  it('does not tag citizen reports that contain the marker (Supabase)', async () => {
+    const news = createNewsFeatures({ supabase: memorySupabase(TAG_ROWS), nextAccidentId: async () => '1', dataDir: tmpDir(), env: { AGENT_ENABLED: 'false' }, logger: silentLogger });
+    expect(tagged(await news.tagAgentRows(featuresFor()))).toEqual(['5']);
+  });
+
+  it('does not tag citizen reports that contain the marker (Postgres)', async () => {
+    const q = memoryPg(TAG_ROWS);
+    const news = createNewsFeatures({ q, nextAccidentId: async () => '1', dataDir: tmpDir(), env: { AGENT_ENABLED: 'false' }, logger: silentLogger });
+    expect(tagged(await news.tagAgentRows(featuresFor()))).toEqual(['5']);
+    expect(q.mock.calls[0][0]).toMatch(/reporter_id IS NULL/);
+  });
+
   it('never throws when the lookup fails', async () => {
     const news = createNewsFeatures({ q: async () => { throw new Error('db down'); }, nextAccidentId: async () => '1', dataDir: tmpDir(), env: { AGENT_ENABLED: 'false' }, logger: silentLogger });
     const fc = { features: [{ properties: { id: '5' } }] };

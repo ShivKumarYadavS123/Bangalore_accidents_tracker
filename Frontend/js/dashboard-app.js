@@ -41,8 +41,13 @@
     const link = String(p.link || '');
     const href = link !== '#' && /^https?:\/\//i.test(link) ? link : null;
     if (href && /^https:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/\d+/i.test(href)) {
-      const handle = (String(p.source || '').match(/^X: @([A-Za-z0-9_]{1,15})$/) || [])[1];
-      return { label: handle ? `@${handle} on X` : 'Bengaluru Traffic Police on X', linkText: 'View post on X ↗', href };
+      // Only rows the X importer labelled as Traffic Police are credited to them.
+      const source = String(p.source || '');
+      const handle = (source.match(/^X: @([A-Za-z0-9_]{1,15})$/) || [])[1];
+      const label = source === 'Bengaluru Traffic Police (X)' ? 'Bengaluru Traffic Police on X'
+        : handle ? `@${handle} on X`
+        : 'Post on X';
+      return { label, linkText: 'View post on X ↗', href };
     }
     if (p.foundBy === 'agent') {
       return { label: `${p.source || 'News report'} (found by BAT News Agent)`, linkText: 'Read article ↗', href };

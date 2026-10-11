@@ -1453,9 +1453,11 @@ async function nextAccidentId(fallback) {
       ids = (await q(`SELECT id FROM accidents WHERE id ~ '^[0-9]+$'`)).map(r => r.id);
     } else if (supabase) {
       // Supabase returns at most 1000 rows per request, so page through every id.
+      // A failed page means the list is incomplete: its max could be an id that
+      // already exists, so use the fallback id instead.
       for (let from = 0; from < 500000; from += 1000) {
         const { data, error } = await supabase.from('accidents').select('id').order('id', { ascending: true }).range(from, from + 999);
-        if (error || !data) break;
+        if (error || !data) return fallback;
         ids.push(...data.map(r => r.id));
         if (data.length < 1000) break;
       }

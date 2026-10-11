@@ -30,6 +30,14 @@ describe('map popup source wording', () => {
     expect(sourceInfo({ source: 'X: @someone', link: 'https://x.com/someone/status/1' }).label).toBe('@someone on X');
   });
 
+  it('calls any other x.com link just "Post on X"', () => {
+    for (const source of ['User Report', 'Bengaluru Traffic Police', 'Deccan Herald', 'X: @not a handle', '', undefined]) {
+      const info = sourceInfo({ source, link: 'https://x.com/blrcitytraffic/status/2108526123160424481' });
+      expect(info.label, String(source)).toBe('Post on X');
+      expect(info.linkText).toBe('View post on X ↗');
+    }
+  });
+
   it('credits the publisher and the News Agent', () => {
     const info = sourceInfo({ source: 'Deccan Herald', link: 'https://www.deccanherald.com/a', foundBy: 'agent' });
     expect(info).toEqual({ label: 'Deccan Herald (found by BAT News Agent)', linkText: 'Read article ↗', href: 'https://www.deccanherald.com/a' });

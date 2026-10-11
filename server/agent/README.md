@@ -94,7 +94,7 @@ These files are git-ignored and best-effort: some hosts wipe them on every deplo
 - **Pending queue:**
   - **Pending Reports** shows every pending row: citizen reports, agent finds and X imports. Each gets Review / Approve / Reject.
   - Badges in the Source column mark "Agent" and "X" rows. The AI integrity pill appears on citizen reports only.
-- **Public map:** approved agent rows read "Source: Deccan Herald (found by BAT News Agent)" with "Read article ↗". X rows read "Source: Bengaluru Traffic Police on X" with "View post on X ↗".
+- **Public map:** approved agent rows (not citizen reports) read "Source: Deccan Herald (found by BAT News Agent)" with "Read article ↗". X rows read "Source: Bengaluru Traffic Police on X" only when the source is "Bengaluru Traffic Police (X)", "@handle on X" for "X: @handle" rows, and "Post on X" for any other x.com link, all with "View post on X ↗".
 
 ## API (admin JWT, rate limited)
 

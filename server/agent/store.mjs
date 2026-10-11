@@ -152,15 +152,18 @@ export function createAccidentStore({ supabase = null, q = null, nextAccidentId,
     throw new Error(last?.error?.message || 'insert failed');
   }
 
-  /** Ids of approved (active) rows the News Agent found, for the map popup label. */
+  /**
+   * Ids of approved (active) rows the News Agent found, for the map popup label.
+   * Citizen reports (reporter_id set) never count, even if their text contains the marker.
+   */
   async function agentRowIds() {
     const pattern = `%${AGENT_MARKER}%`;
     let rows = null;
     if (supabase) {
-      try { rows = await selectAll(() => supabase.from('accidents').select('id').eq('status', 'active').like('description', pattern)); }
+      try { rows = await selectAll(() => supabase.from('accidents').select('id').eq('status', 'active').is('reporter_id', null).like('description', pattern)); }
       catch (e) { logger.warn?.('[agent] Supabase agent-row lookup failed:', e.message); }
     }
-    if (!rows && q) rows = await q(`SELECT id FROM accidents WHERE status = 'active' AND description LIKE $1`, [pattern]);
+    if (!rows && q) rows = await q(`SELECT id FROM accidents WHERE status = 'active' AND reporter_id IS NULL AND description LIKE $1`, [pattern]);
     return new Set((rows || []).map(r => String(r.id)));
   }
 
