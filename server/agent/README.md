@@ -6,7 +6,7 @@ Nothing the agent finds reaches the public map until an admin approves it.
 
 ## What one run does
 
-1. **Search.** Fetches one Google News RSS search feed per query, plus one GDELT query, for the last 2 days. GDELT goes first because its links point straight at publishers. GDELT allows about one request every 5 seconds: if it answers "rate-limited", the agent waits 6 seconds and tries once more, then skips GDELT for that run (shown in amber as "GDELT: rate-limited, skipped", not as a failure). A Google News feed that answers HTTP 404 or 5xx is tried once more after 3 seconds; if it fails again it is skipped for that run, also in amber ("Google News: <query>: didn't answer (HTTP 404), skipped"), not as a failure. Results are merged and URLs cleaned (tracking parameters and fragments dropped). Then it drops:
+1. **Search.** Fetches one Google News RSS search feed per query, plus one GDELT query, for the last 2 days. GDELT goes first because its links point straight at publishers. GDELT allows about one request every 5 seconds: if it answers "rate-limited", the agent waits 6 seconds and tries once more, then skips GDELT for that run (shown in amber as "GDELT: rate-limited, skipped", not as a failure). A Google News feed that answers HTTP 404 or 5xx is tried once more after 3 seconds; if it fails again it is skipped for that run, also in amber ("Google News: <query>: didn't answer (HTTP 404), skipped"), not as a failure. A Kannada query uses the Kannada edition (`hl=kn`) first; if that feed has no items, the same query is tried once on the English India edition (`hl=en-IN`), and the log says which edition gave the results. A feed with no items logs its HTTP status and content type (never the feed itself). Results are merged and URLs cleaned (tracking parameters and fragments dropped). Then it drops:
    - URLs already processed (`server/data/agent-seen.json`)
    - URLs already in `accidents.link`
    - headlines that are near-identical to another one in this run or in the last 7 days
@@ -18,8 +18,8 @@ Nothing the agent finds reaches the public map until an admin approves it.
    - **Over the limit:** items over the read limit wait in a small queue for the next run, so they don't cost another triage call.
 5. **Import** (`pipeline.mjs`, shared with the X importer):
    1. Exact link match against `accidents.link`, before any AI call. A match means skip, no insert.
-   2. One AI call (at most 2 attempts) extracts: is it a real crash, is it in Bengaluru, location, area, date, time, severity, vehicles, a one-line English summary, and the publisher. The article is placed in a delimited data block that the AI is told to treat as data, never instructions. Every field is validated, and the date must not be in the future or older than 60 days.
-   3. Geocode (Nominatim, at most 1 request per second). Coordinates outside lat 12.7–13.25, lng 77.35–77.85 are dropped and the admin sets the pin.
+   2. One AI call (at most 2 attempts) extracts: is it a real crash, is it in Bengaluru, location, area, date, time, severity, vehicles, a one-line English summary, and the publisher. The article is placed in a delimited data block that the AI is told to treat as data, never instructions. Every field is validated, and the date must not be in the future or older than 60 days. Summary and severity are required; the location is not (the AI is told to leave it empty rather than guess).
+   3. Geocode (Nominatim, at most 1 request per second). Coordinates outside lat 12.7–13.25, lng 77.35–77.85 are dropped and the admin sets the pin. **No exact place** (common for headline-only Google News items): nothing is geocoded, the record is saved with the area as its location (or "Bengaluru (exact place not in the article)"), no pin, and "(no exact place: set the pin before approving)" in the description, so the admin places it with Edit.
    4. `find_duplicates_by_point` (300 m, same date). A nearby record still gets inserted, but its description starts with "Possible duplicate of #id".
    5. Insert with `status = 'pending'` and `reporter_id = null`, the same way as `POST /api/reports` (Supabase insert, then `set_accident_geom`, with a Postgres fallback).
       - Title: "Fatal accident: Hosur Road near Silk Board junction"
@@ -27,6 +27,12 @@ Nothing the agent finds reaches the public map until an admin approves it.
       - Link: the article
       - Description: the summary followed by "(Found by BAT News Agent)"
 6. **Remember.** Every URL that got an outcome is added to the seen-list. Items held back by the AI budget, a rate limit or a temporary network error are not added, so a later run tries them again.
+7. **Failed saves.** A save that fails is not a verdict on the article. The item is shown as Deferred, is not added to the seen-list, and goes back in the queue with the record the AI already built (extracted fields and location). The next run retries only the save: no reading and no AI call.
+   - The reason is "could not save (<error>); will retry next run".
+   - If the database still has the old status check that only allows Active rows, the reason is "database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql; will retry next run". Nothing can be saved until that is fixed, so the rest of that run sends no more articles to the AI; the remaining items wait with the same reason.
+   - After 5 runs of failed saves the item is finished as `error` ("gave up after 5 failed saves ...").
+   - Import from X shows the same status-check reason, ending "import the post again once that is done".
+   - One-off on upgrade: articles whose save failed before this behaviour existed (the latest result in the run history is an error at the save step) are taken off the seen-list once, so the next search picks them up again.
 
 Every item ends with one of: `imported`, `duplicate`, `not_accident`, `outside_bangalore`, `invalid_link` or `error`. The admin run log shows a status and reason for each, for example "not in Bangalore", "duplicate of #812" or "imported #1190 (possible duplicate of #812)".
 
@@ -105,7 +111,7 @@ Set `AGENT_ENABLED=false` in `server/.env` and restart the server. Nothing is sc
 | File | What it holds | Safe to delete? |
 |---|---|---|
 | `server/data/agent-seen.json` | Last 5,000 processed URLs | Yes |
-| `server/data/agent-state.json` | Today's AI call count, the read queue, recent headlines | Yes |
+| `server/data/agent-state.json` | Today's AI call count, the read queue (including saves waiting to be retried), recent headlines | Yes |
 | `server/data/agent-runs.json` | Last 50 run logs (titles, URLs, steps, reasons; no secrets) | Yes |
 
 These files are git-ignored and best-effort: some hosts wipe them on every deploy. That is fine because the database link match is the real dedupe, so a wiped seen-list costs some extra AI calls but never creates duplicate rows. The daily AI count also resets with the file, which the site-wide budget in `llm.mjs` still caps.

@@ -9,22 +9,24 @@
  *   d. READ       resolve and fetch the article (max AGENT_MAX_READS_PER_RUN)
  *   e. IMPORT     extract + locate + dedupe + save as pending (pipeline.mjs)
  *   f. Every processed URL is remembered so it is never paid for twice.
+ *      A failed save is not a verdict on the article: the extracted record is
+ *      queued and only the save is retried next run (no AI call), up to 5 runs.
  *
  * AI budget: at most AGENT_MAX_AI_CALLS_PER_RUN per run and AGENT_DAILY_AI_BUDGET
  * per IST day (every chatJSON attempt counts), and no AI step starts while fewer
  * than 10 site-wide free calls are left (Ask BAT and the other features share
- * them). A 429 from OpenRouter ends the run. Files under server/data/ are
- * best-effort: the database link match is the real dedupe.
+ * them). An account-level 429 from OpenRouter ends the run. Files under
+ * server/data/ are best-effort: the database link match is the real dedupe.
  */
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { chatJSON, budgetStatus as llmBudgetStatus, ensureFreeModel } from '../ai/llm.mjs';
 import {
-  fetchCapped, googleNewsUrl, gdeltUrl, parseGoogleNewsRss, parseGdelt, parseQueries,
+  fetchCapped, googleNewsUrl, gdeltUrl, parseGoogleNewsRss, parseGdelt, parseQueries, isKannada,
   normalizeUrl, urlKey, titleTokens, similarTitles, isGoogleHost, htmlToText, metaContent, publisherFromUrl,
 } from './sources.mjs';
-import { looksLikeAccident, neutralise, istDate, AGENT_MARKER } from './pipeline.mjs';
+import { looksLikeAccident, neutralise, istDate, AGENT_MARKER, STATUS_CHECK_PROBLEM } from './pipeline.mjs';
 
 export const SITE_RESERVE = 10;
 export const TRIAGE_BATCH = 30;
@@ -33,6 +35,8 @@ export const TRIAGE_ATTEMPTS = 3; // one model failing still leaves two others
 export const TRIAGE_GIVE_UP_RUNS = 3; // a headline the AI can't judge 3 runs in a row is finished as an error
 export const GDELT_RETRY_WAIT_MS = 6000; // GDELT allows about one request every 5 seconds
 export const FEED_RETRY_WAIT_MS = 3000; // a Google News feed that answered 404/5xx is tried once more
+export const SAVE_GIVE_UP_RUNS = 5; // a queued save that fails 5 runs in a row is finished as an error
+export const STATUS_CHECK_REASON = `${STATUS_CHECK_PROBLEM}; will retry next run`;
 
 /**
  * Free models for the agent (triage, extraction, X import), in order.
@@ -248,6 +252,8 @@ export function createNewsAgent({
     recentTitles: Array.isArray(raw.recentTitles) ? raw.recentTitles.filter(x => x && typeof x.t === 'string') : [],
     // url key → { n: runs in a row where triage failed, at: last failure time }
     triageFails: raw.triageFails && typeof raw.triageFails === 'object' && !Array.isArray(raw.triageFails) ? raw.triageFails : {},
+    // true once the one-off below has brought back articles whose save failed before saves were retried
+    saveErrorsUnseen: raw.saveErrorsUnseen === true,
   };
   const seenRaw = readJson(files.seen, []);
   const seenList = (Array.isArray(seenRaw) ? seenRaw : []).filter(k => typeof k === 'string').slice(-SEEN_MAX);
@@ -260,6 +266,45 @@ export function createNewsAgent({
   let timer = null;
   let nextRunAt = null;
   let started = false;
+
+  function unsee(key) {
+    if (!key || !seenSet.has(key)) return;
+    seenSet.delete(key);
+    const i = seenList.indexOf(key);
+    if (i >= 0) seenList.splice(i, 1);
+  }
+
+  /**
+   * One-off: before saves were retried, a failed insert finished the article as
+   * "error" and marked it seen, so it could never come back. Un-see every key
+   * whose latest recorded result was an error at step 'save' (and forget its
+   * headline, or the repeated-story check would drop it), so the next search
+   * finds it again. Give-ups after 5 failed saves (gaveUp) stay seen.
+   */
+  if (!state.saveErrorsUnseen) {
+    const latest = new Map(); // url key → newest recorded item (runs are newest first)
+    for (const r of runs) {
+      for (const it of Array.isArray(r.items) ? r.items : []) {
+        const k = urlKey(it?.url);
+        if (k && !latest.has(k)) latest.set(k, it);
+      }
+    }
+    let revived = 0;
+    for (const [k, it] of latest) {
+      if (it.status !== 'error' || it.step !== 'save' || it.deferred || it.gaveUp) continue;
+      unsee(k);
+      if (it.link) unsee(urlKey(it.link));
+      const title = String(it.title || '').slice(0, 160);
+      state.recentTitles = state.recentTitles.filter(t => t.title !== title);
+      revived++;
+    }
+    state.saveErrorsUnseen = true;
+    if (revived) {
+      logger.log?.(`[agent] ${revived} article(s) whose save failed earlier will be looked at again`);
+      writeJson(files.seen, seenList);
+    }
+    saveState();
+  }
 
   function dayState() {
     const today = istDate(now());
@@ -323,6 +368,7 @@ export function createNewsAgent({
     if (extra.id) item.id = extra.id;
     if (extra.link && extra.link !== c.url) item.link = extra.link;
     if (extra.deferred) item.deferred = true;
+    if (extra.gaveUp) item.gaveUp = true;
     run.items.push(item);
   }
 
@@ -341,12 +387,17 @@ export function createNewsAgent({
     record(run, c, step, 'error', reason, { deferred: true });
   }
 
-  function requeue(c, tries = c.tries || 0) {
+  /**
+   * Back into the queue for a later run. `saveRetry` ({ item, data, loc,
+   * dateAssumed }) means only the save is left to do: no reading, no AI call.
+   */
+  function requeue(c, tries = c.tries || 0, { saveRetry = c.saveRetry || null, saveTries = c.saveTries || 0 } = {}) {
     if (state.queue.some(x => x.key === c.key)) return;
     state.queue.push({
       key: c.key, url: c.url, title: c.title, publisher: c.publisher || null, domain: c.domain || null,
       publishedAt: c.publishedAt || null, snippet: c.snippet || '', source: c.source || null,
       triageReason: c.triageReason || '', tries, queuedAt: c.queuedAt || new Date(now()).toISOString(),
+      ...(saveRetry ? { saveRetry, saveTries } : {}),
     });
   }
 
@@ -370,33 +421,37 @@ export function createNewsAgent({
   /**
    * One Google News feed. A 404 or 5xx is usually a passing hiccup: try the
    * same feed once more after 3 s, then skip it for this run (shown in amber,
-   * like a rate-limited GDELT, not as a failure).
+   * like a rate-limited GDELT, not as a failure). `name` keys run.sources;
+   * `label` (default `name`) is what the log says, e.g. which edition.
+   * A feed that parses to 0 items logs its HTTP status and content type (never the body).
    */
-  async function fetchFeed(run, name, url, accept, parse) {
+  async function fetchFeed(run, name, url, accept, parse, { label = name } = {}) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const r = await fetchUrl(url, { maxBytes: 3 * 1024 * 1024, timeoutMs: 15000, accept });
         if (!r.ok) {
           if (r.status === 404 || r.status >= 500) {
             if (attempt === 1) {
-              log(run, `SEARCH ${name}: HTTP ${r.status}, trying again in ${FEED_RETRY_WAIT_MS / 1000} s`);
+              log(run, `SEARCH ${label}: HTTP ${r.status}, trying again in ${FEED_RETRY_WAIT_MS / 1000} s`);
               await sleep(FEED_RETRY_WAIT_MS);
               continue;
             }
             const why = `didn't answer (HTTP ${r.status})`;
             run.sources[name] = { ok: false, skipped: true, count: 0, error: why };
-            log(run, `SEARCH ${name}: ${why}, skipped`);
+            log(run, `SEARCH ${label}: ${why}, skipped`);
             return [];
           }
           throw new Error(`HTTP ${r.status}`);
         }
         const items = parse(r.text);
         run.sources[name] = { ok: true, count: items.length };
-        log(run, `SEARCH ${name}: ${items.length} results`);
+        log(run, items.length
+          ? `SEARCH ${label}: ${items.length} results`
+          : `SEARCH ${label}: 0 results (HTTP ${r.status}, content-type ${String(r.contentType || 'none').slice(0, 80)})`);
         return items;
       } catch (e) {
         run.sources[name] = { ok: false, count: 0, error: short(e) };
-        log(run, `SEARCH ${name}: failed (${short(e)}), skipped`);
+        log(run, `SEARCH ${label}: failed (${short(e)}), skipped`);
         return [];
       }
     }
@@ -444,9 +499,25 @@ export function createNewsAgent({
     // GDELT first: its links point straight at publishers, so it wins near-identical headlines.
     const gdelt = await searchGdelt(run);
     const google = [];
+    const accept = 'application/rss+xml, application/xml;q=0.9, */*;q=0.5';
     for (const query of cfg.queries) {
       await sleep(cfg.requestDelayMs);
-      google.push(...await fetchFeed(run, `Google News: ${query}`, googleNewsUrl(query, run.days), 'application/rss+xml, application/xml;q=0.9, */*;q=0.5', parseGoogleNewsRss));
+      const name = `Google News: ${query}`;
+      if (!isKannada(query)) {
+        google.push(...await fetchFeed(run, name, googleNewsUrl(query, run.days), accept, parseGoogleNewsRss));
+        continue;
+      }
+      // Kannada query: the Kannada edition first; if it parses to nothing, the same query on the English India edition.
+      let items = await fetchFeed(run, name, googleNewsUrl(query, run.days, 'kn'), accept, parseGoogleNewsRss, { label: `${name} (Kannada edition)` });
+      if (run.sources[name]?.ok && !items.length) {
+        log(run, `SEARCH ${name}: the Kannada edition gave 0 results, trying the English India edition`);
+        await sleep(cfg.requestDelayMs);
+        items = await fetchFeed(run, name, googleNewsUrl(query, run.days, 'en'), accept, parseGoogleNewsRss, { label: `${name} (English India edition)` });
+        if (run.sources[name]) run.sources[name].edition = 'en-IN';
+      } else if (run.sources[name]?.ok) {
+        run.sources[name].edition = 'kn';
+      }
+      google.push(...items);
     }
     return [...gdelt, ...google];
   }
@@ -598,11 +669,46 @@ export function createNewsAgent({
         }
       }
 
-      // d + e. READ, then EXTRACT + LOCATE + DEDUPE + SAVE
-      const toRead = kept.slice(0, cfg.maxReads);
-      const overflow = kept.slice(cfg.maxReads);
+      // A failed save is not a verdict on the article: keep what was extracted and
+      // retry only the save next run. After an accidents_status_check failure nothing
+      // can be saved, so the rest of this run spends no AI calls.
+      let saveBlocked = false;
+      const onSaveFailure = (item, res, retry) => {
+        const saveTries = (item.saveTries || 0) + 1;
+        if (saveTries >= SAVE_GIVE_UP_RUNS) {
+          finish(run, item, 'save', 'error', `gave up after ${saveTries} failed saves (${res.reason})`, { gaveUp: true, link: res.link });
+        } else {
+          requeue(item, item.tries || 0, { saveRetry: retry, saveTries });
+          defer(run, item, 'save', res.statusCheck ? STATUS_CHECK_REASON : `${res.reason}; will retry next run`);
+        }
+        if (res.statusCheck && !saveBlocked) {
+          saveBlocked = true;
+          log(run, `SAVE: ${STATUS_CHECK_PROBLEM}; no more AI extraction this run`);
+        }
+      };
+
+      // d. Saves that failed in an earlier run: no reading, no AI call.
+      const saveRetries = kept.filter(k => k.saveRetry);
+      const fresh = kept.filter(k => !k.saveRetry);
+      if (saveRetries.length) log(run, `SAVE: retrying ${saveRetries.length} earlier save(s), no AI call needed`);
+      for (const item of saveRetries) {
+        if (saveBlocked) { requeue(item); defer(run, item, 'save', STATUS_CHECK_REASON); continue; }
+        const { item: saved, data, loc, dateAssumed } = item.saveRetry;
+        const res = await pipeline.saveExtracted(saved, data, loc, { dateAssumed });
+        if (res.saveFailed) { onSaveFailure(item, res, item.saveRetry); continue; }
+        finish(run, item, res.step, res.status, res.reason, { id: res.id, link: res.link });
+      }
+
+      // e. READ, then EXTRACT + LOCATE + DEDUPE + SAVE
+      const toRead = fresh.slice(0, cfg.maxReads);
+      const overflow = fresh.slice(cfg.maxReads);
       log(run, `READ: ${toRead.length} article(s) to read${overflow.length ? `, ${overflow.length} queued for the next run` : ''}`);
       for (const [idx, item] of toRead.entries()) {
+        if (saveBlocked) {
+          requeue(item);
+          defer(run, item, 'extract', STATUS_CHECK_REASON);
+          continue;
+        }
         if (stopped || gate.allowance() < 1) {
           stop('READ');
           requeue(item);
@@ -612,10 +718,9 @@ export function createNewsAgent({
         if (idx > 0) await sleep(cfg.requestDelayMs);
         const page = await readArticle(item);
         if (page.invalid) { finish(run, item, 'read', 'invalid_link', page.reason); continue; }
-        const res = await pipeline.importItem({
+        const newsItem = {
           kind: 'news',
           title: item.title,
-          text: page.text,
           link: page.link,
           altLinks: page.link !== item.url ? [item.url] : [],
           publishedAt: item.publishedAt,
@@ -624,7 +729,13 @@ export function createNewsAgent({
           fallbackPublisher: publisherFromUrl(page.link),
           marker: AGENT_MARKER,
           titleStyle: 'severity',
-        }, { llm: gate.call, models: cfg.models, today: istDate(now()) });
+        };
+        const res = await pipeline.importItem({ ...newsItem, text: page.text }, { llm: gate.call, models: cfg.models, today: istDate(now()) });
+        if (res.saveFailed) {
+          // The article text isn't kept: the retry only needs the extracted fields and the location.
+          onSaveFailure(item, res, { item: newsItem, ...res.retry });
+          continue;
+        }
         const blocked = res.status === 'error' && (res.budget || gate.rateLimited);
         if (blocked || (res.status === 'error' && res.retryable && (item.tries || 0) < 1)) {
           // Not a verdict on the article: try it again in a later run.
@@ -643,7 +754,7 @@ export function createNewsAgent({
       });
 
       run.status = gate.rateLimited ? 'rate_limited' : stopped ? 'budget_reached' : 'completed';
-      run.stopReason = stopped ? (gate.stopReason || 'AI limit reached') : null;
+      run.stopReason = stopped ? (gate.stopReason || 'AI limit reached') : saveBlocked ? STATUS_CHECK_PROBLEM : null;
     } catch (e) {
       run.status = 'failed';
       run.stopReason = short(e);

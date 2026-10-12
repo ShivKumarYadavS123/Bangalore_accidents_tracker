@@ -161,9 +161,17 @@ export function makeAi({ keep = (n) => Array.from({ length: n }, (_, i) => ({ i:
   return fn;
 }
 
-/** In-memory stand-in for store.mjs. */
-export function makeStore({ rows = [], nearby = [], failLookups = false, failAllLinks = false, startId = 1191 } = {}) {
+/** The error Supabase returns while the live table still only allows status 'active'. */
+export const STATUS_CHECK_ERROR = 'new row for relation "accidents" violates check constraint "accidents_status_check"';
+
+/**
+ * In-memory stand-in for store.mjs. `insertErrors` makes the next inserts fail
+ * with those messages, one per insert (a function gets the insert number instead).
+ */
+export function makeStore({ rows = [], nearby = [], failLookups = false, failAllLinks = false, startId = 1191, insertErrors = [] } = {}) {
   let nextId = startId;
+  let inserts = 0;
+  const errors = Array.isArray(insertErrors) ? [...insertErrors] : null;
   const store = {
     rows: rows.map(r => ({ ...r })),
     inserted: [],
@@ -188,6 +196,10 @@ export function makeStore({ rows = [], nearby = [], failLookups = false, failAll
       return store.nearby;
     },
     async insertPending(record, loc) {
+      inserts++;
+      store.insertAttempts = inserts;
+      const message = errors ? errors.shift() : insertErrors(inserts);
+      if (message) throw new Error(message);
       const id = String(nextId++);
       const row = { ...record, id };
       store.rows.push(row);

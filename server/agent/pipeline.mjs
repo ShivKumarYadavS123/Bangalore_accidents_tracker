@@ -26,6 +26,17 @@ export const BLR_BOX = { minLat: 12.7, maxLat: 13.25, minLng: 77.35, maxLng: 77.
 export const MAX_AGE_DAYS = 60;
 export const NEAR_DUPLICATE_RADIUS_M = 300;
 
+/** Saved as the location when the article names no place (and no area): the admin sets the pin. */
+export const NO_PLACE_LOCATION = 'Bengaluru (exact place not in the article)';
+export const NO_PLACE_NOTE = '(no exact place: set the pin before approving)';
+
+/**
+ * The live accidents table still has the old status check that only allows
+ * 'active', so every pending insert fails until the owner updates it.
+ */
+export const STATUS_CHECK_PROBLEM = "database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql";
+export const isStatusCheckError = (message) => /accidents_status_check/i.test(String(message || ''));
+
 const SEVERITIES = ['fatal', 'serious', 'minor'];
 const SEVERITY_WORD = { fatal: 'Fatal', serious: 'Serious', minor: 'Minor' };
 
@@ -68,7 +79,7 @@ function normaliseTime(t) {
 // ── Prompt ───────────────────────────────────────────────────────────────────
 
 const FIELD_RULES = `- in_bangalore: true only if the crash happened inside Bengaluru Urban or Bengaluru Rural district (city roads, Outer Ring Road, NICE Road, airport road, Hoskote, Devanahalli, Doddaballapura, Nelamangala, Anekal, Attibele). false anywhere else, including Hosur, Tumakuru, Ramanagara, Channapatna, Kanakapura, Mysuru and Kolar, and for Bengaluru residents hurt elsewhere.
-- location: the most precise place given, a road plus a junction, flyover or landmark (e.g. "Hosur Road near Silk Board junction"). Never just "Bengaluru". At most 120 characters.
+- location: the most precise place given, a road plus a junction, flyover or landmark (e.g. "Hosur Road near Silk Board junction"). Never just "Bengaluru". At most 120 characters. If the text names no specific place, leave location null rather than guessing.
 - area: the locality or neighbourhood (e.g. "Madiwala"). At most 60 characters.
 - date: the day the crash happened, YYYY-MM-DD. Use the published date to resolve words like "yesterday" or "on Saturday night". null if unclear.
 - time: 24-hour HH:MM when the time is stated (e.g. "around 11.30 pm" gives "23:30"), else null.
@@ -135,7 +146,7 @@ export function checkShape(j) {
     }
     if (typeof v !== 'string' || v.trim().length < min || v.trim().length > max) throw new Error(`Reply has invalid ${key}`);
   };
-  text('location', 3, 120, true);
+  text('location', 3, 120, false); // may be missing: saved without a pin for the admin to set
   text('area', 2, 60, false);
   text('summary', 10, 300, true);
   text('vehicles', 2, 120, false);
@@ -276,11 +287,15 @@ export function pickPublisher(candidates) {
 
 /**
  * Row for accidents. `item.sourceName` is fixed for X posts; news items pick
- * the feed's publisher, then the AI's, then the domain.
+ * the feed's publisher, then the AI's, then the domain. Without an exact place
+ * the row is saved with the area (or "Bengaluru (exact place not in the
+ * article)") as its location and no pin, and the description asks the admin
+ * to set the pin.
  */
 export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateAssumed = false, inferZone = () => 'Other' } = {}) {
   const severity = data.severity;
-  const location = data.location;
+  const exactPlace = Boolean(data.location);
+  const location = data.location || data.area || NO_PLACE_LOCATION;
   const titleText = item.titleStyle === 'traffic-police'
     ? `Traffic Police: ${location}`
     : `${SEVERITY_WORD[severity]} accident: ${location}`;
@@ -290,6 +305,7 @@ export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateA
     possibleDuplicateOf ? `Possible duplicate of #${possibleDuplicateOf}.` : null,
     data.summary,
     dateAssumed ? `(Date taken from the ${item.kind === 'x' ? 'post' : 'article'}'s publish date.)` : null,
+    exactPlace ? null : NO_PLACE_NOTE,
     item.marker || AGENT_MARKER,
   ].filter(Boolean).join(' ').slice(0, 1000);
   return {
@@ -303,7 +319,7 @@ export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateA
     score: severity === 'fatal' ? 10 : severity === 'serious' ? 5 : 1,
     date_raw: date ? (data.time ? `${date} ${data.time}` : date) : 'Unknown',
     accident_date: date || null,
-    has_coords: Boolean(loc.has_coords),
+    has_coords: exactPlace && Boolean(loc.has_coords),
     status: 'pending',
     reporter_id: null,
     description,
@@ -373,10 +389,21 @@ export function createImportPipeline({ store, geocode = null, inferZone = () => 
       dateAssumed = true;
     }
 
-    // 3. Locate.
-    const loc = await locate(data, { geocode: geocode ? throttledGeocode : null });
+    // 3. Locate: only an exact place is geocoded; without one the admin sets the pin.
+    const loc = data.location ? await locate(data, { geocode: geocode ? throttledGeocode : null }) : { has_coords: false, lat: null, lng: null };
 
-    // 4 + 5. Duplicate check and insert under one lock, so the same link can't be saved twice.
+    // 4 + 5. Duplicate check and insert.
+    return saveExtracted(item, data, loc, { dateAssumed });
+  }
+
+  /**
+   * Duplicate check and insert under one lock, so the same link can't be saved
+   * twice. Also used on its own to retry a save that failed in an earlier run
+   * (no AI call). A failed save returns { saveFailed, statusCheck, retry } where
+   * `retry` holds what is needed to try again: the extracted fields and the location.
+   */
+  async function saveExtracted(item, data, loc, { dateAssumed = false } = {}) {
+    const result = (status, step, reason, extra = {}) => ({ status, step, reason, link: item.link, ...extra });
     try {
       return await withLock(async () => {
         const dup = await checkDuplicate({ ...item, lat: loc.lat, lng: loc.lng, has_coords: loc.has_coords, date: data.date }, { store });
@@ -384,19 +411,27 @@ export function createImportPipeline({ store, geocode = null, inferZone = () => 
         const possibleDuplicateOf = dup.status === 'possible' ? dup.id : null;
         const record = buildRecord(item, data, loc, { possibleDuplicateOf, dateAssumed, inferZone });
         const id = await savePending(record, loc, { store });
-        const notes = [possibleDuplicateOf ? `possible duplicate of #${possibleDuplicateOf}` : null, loc.has_coords ? null : 'no map pin yet'].filter(Boolean);
+        const notes = [
+          possibleDuplicateOf ? `possible duplicate of #${possibleDuplicateOf}` : null,
+          !data.location ? 'no exact place, set the pin' : record.has_coords ? null : 'no map pin yet',
+        ].filter(Boolean);
         return result('imported', 'save', `imported #${id}${notes.length ? ` (${notes.join('; ')})` : ''}`, {
           id: String(id),
           possibleDuplicateOf,
-          has_coords: loc.has_coords,
+          has_coords: record.has_coords,
           extracted: { location: data.location, area: data.area, date: data.date, time: data.time, severity: data.severity, vehicles: data.vehicles },
         });
       });
     } catch (e) {
       logger.warn?.('[agent] save failed:', shortError(e));
-      return result('error', 'save', `could not save (${shortError(e)})`);
+      const statusCheck = isStatusCheckError(e?.message);
+      return result('error', 'save', statusCheck ? STATUS_CHECK_PROBLEM : `could not save (${shortError(e)})`, {
+        saveFailed: true,
+        statusCheck,
+        retry: { data, loc, dateAssumed },
+      });
     }
   }
 
-  return { importItem, withLock };
+  return { importItem, saveExtracted, withLock };
 }

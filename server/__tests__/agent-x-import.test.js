@@ -9,7 +9,7 @@ import {
 import { createImportPipeline, addDays } from '../agent/pipeline.mjs';
 import { resetBudget, clearLlmCache } from '../ai/llm.mjs';
 import { chatReply } from './fixtures/ai-fixtures.js';
-import { extraction, notAccident, makeAi, makeStore, fetched, oembedReply, postIdAt, silentLogger } from './fixtures/agent-fixtures.js';
+import { extraction, notAccident, makeAi, makeStore, fetched, oembedReply, postIdAt, silentLogger, STATUS_CHECK_ERROR } from './fixtures/agent-fixtures.js';
 
 beforeEach(() => { process.env.OPENROUTER_API_KEY = 'test-key'; resetBudget(); clearLlmCache(); });
 afterEach(() => { delete process.env.OPENROUTER_API_KEY; vi.restoreAllMocks(); });
@@ -186,6 +186,14 @@ describe('X batch import', () => {
     ]);
     expect(results.map(r => r.status)).toEqual(['error', 'imported']);
     expect(results[0].reason).toMatch(/could not check for duplicates/);
+  });
+
+  it('a database that refuses Pending rows gets the clear status-check reason', async () => {
+    const { importer, store } = setup({ store: makeStore({ insertErrors: () => STATUS_CHECK_ERROR }) });
+    const [r] = await importer.importLinks([`https://x.com/blrcitytraffic/status/${REAL_ID}`]);
+    expect(r.status).toBe('error');
+    expect(r.reason).toBe("database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql; import the post again once that is done");
+    expect(store.inserted).toHaveLength(0);
   });
 
   it('an AI date outside the 60-day window is an error, not an import', async () => {

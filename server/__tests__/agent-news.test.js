@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { createNewsAgent, parseTriage, agentModels, isModelRateLimit, TRIAGE_BATCH, DEFAULT_AGENT_MODELS } from '../agent/news-agent.mjs';
+import { createNewsAgent, parseTriage, agentModels, isModelRateLimit, TRIAGE_BATCH, DEFAULT_AGENT_MODELS, STATUS_CHECK_REASON } from '../agent/news-agent.mjs';
 import { chatReply, jsonResponse } from './fixtures/ai-fixtures.js';
 import { createImportPipeline, istDate } from '../agent/pipeline.mjs';
 import {
@@ -15,7 +15,7 @@ import {
 import { resetBudget, clearLlmCache } from '../ai/llm.mjs';
 import {
   GOOGLE_RSS, GOOGLE_ITEMS, GDELT_JSON, GDELT_URLS, CRASH_ARTICLE, googleRss, extraction,
-  makeFeedFetch, makeAi, makeStore, tmpDir, silentLogger, openRouterError, upstreamLimited, freeDailyLimit,
+  makeFeedFetch, makeAi, makeStore, tmpDir, silentLogger, openRouterError, upstreamLimited, freeDailyLimit, STATUS_CHECK_ERROR,
 } from './fixtures/agent-fixtures.js';
 
 beforeEach(() => { process.env.OPENROUTER_API_KEY = 'test-key'; delete process.env.AI_DISABLE_LLM; resetBudget(); clearLlmCache(); });
@@ -469,6 +469,163 @@ describe('News Agent AI calls', () => {
       const run = await runOnce(agent);
       expect(run.items[0]).toMatchObject({ deferred: true, reason: expect.stringMatching(/waiting for AI budget/) });
     }
+  });
+});
+
+describe('failed saves', () => {
+  const oneHeadline = () => makeFeedFetch({ gdelt: { articles: [] }, rss: googleRss([GOOGLE_ITEMS[0]]) });
+  const key = urlKey(GOOGLE_ITEMS[0].link);
+  const seenFile = (dataDir) => JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-seen.json'), 'utf8'));
+  const stateFile = (dataDir) => JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-state.json'), 'utf8'));
+
+  it('are deferred and queued with the extracted record; the next run retries only the save (no AI call)', async () => {
+    const dataDir = tmpDir();
+    const store = makeStore({ insertErrors: ['connection reset by peer'] });
+    const { agent, aiFetch } = makeAgent({ fetchUrl: oneHeadline(), store, dataDir });
+
+    const first = await runOnce(agent);
+    expect(first.items[0]).toMatchObject({ step: 'save', status: 'error', deferred: true, reason: 'could not save (connection reset by peer); will retry next run' });
+    expect(first.counts).toMatchObject({ deferred: 1, error: 0, imported: 0 });
+    expect(seenFile(dataDir)).not.toContain(key);
+    const queued = stateFile(dataDir).queue[0];
+    expect(queued).toMatchObject({ key, saveTries: 1, saveRetry: { item: { link: 'https://news.google.com/rss/articles/CBMiAAA111', publisher: 'Deccan Herald' }, data: { location: 'Hosur Road near Silk Board junction' }, loc: { has_coords: true } } });
+    expect(queued.saveRetry.item).not.toHaveProperty('text');
+    const aiCalls = aiFetch.mock.calls.length;
+
+    const second = await runOnce(agent);
+    expect(aiFetch.mock.calls.length).toBe(aiCalls); // no triage, no extraction
+    expect(second.aiCalls).toBe(0);
+    expect(second.items[0]).toMatchObject({ step: 'save', status: 'imported', reason: 'imported #1191' });
+    expect(store.inserted).toHaveLength(1);
+    expect(store.inserted[0]).toMatchObject({ status: 'pending', source: 'Deccan Herald', link: 'https://news.google.com/rss/articles/CBMiAAA111' });
+    expect(seenFile(dataDir)).toContain(key);
+  });
+
+  it('explain an accidents_status_check failure', async () => {
+    const { agent } = makeAgent({ fetchUrl: oneHeadline(), store: makeStore({ insertErrors: () => STATUS_CHECK_ERROR }) });
+    const run = await runOnce(agent);
+    expect(run.items[0].reason).toBe("database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql; will retry next run");
+    expect(STATUS_CHECK_REASON).toBe(run.items[0].reason);
+    expect(run.stopReason).toBe("database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql");
+  });
+
+  it('after a status-check failure, the rest of the run spends no AI calls', async () => {
+    const dataDir = tmpDir();
+    const store = makeStore({ insertErrors: () => STATUS_CHECK_ERROR });
+    const { agent, aiFetch } = makeAgent({ store, dataDir }); // three crash headlines
+    const run = await runOnce(agent);
+    expect(aiFetch.calls.triage).toEqual([3]);
+    expect(aiFetch.calls.extract).toHaveLength(1); // only the first; the other two are not sent to the AI
+    const deferred = run.items.filter(i => i.deferred);
+    expect(deferred).toHaveLength(3);
+    for (const d of deferred) expect(d.reason).toBe(STATUS_CHECK_REASON);
+    expect(run.log.some(l => /no more AI extraction this run/.test(l))).toBe(true);
+    const queue = stateFile(dataDir).queue;
+    expect(queue).toHaveLength(3);
+    expect(queue.filter(q => q.saveRetry)).toHaveLength(1);
+
+    // Still broken next run: the queued save is tried once, the others wait again, still no AI call.
+    const second = await runOnce(agent);
+    expect(aiFetch.calls.extract).toHaveLength(1);
+    expect(second.aiCalls).toBe(0);
+    expect(store.insertAttempts).toBe(2);
+    expect(second.items.filter(i => i.deferred).every(i => i.reason === STATUS_CHECK_REASON)).toBe(true);
+  });
+
+  it('give up on a queued save after 5 runs', async () => {
+    const dataDir = tmpDir();
+    const store = makeStore({ insertErrors: () => 'timeout' });
+    const { agent, aiFetch } = makeAgent({ fetchUrl: oneHeadline(), store, dataDir });
+    for (let n = 1; n <= 4; n++) {
+      const run = await runOnce(agent);
+      expect(run.items[0], `run ${n}`).toMatchObject({ step: 'save', deferred: true });
+      expect(stateFile(dataDir).queue[0].saveTries).toBe(n);
+    }
+    const fifth = await runOnce(agent);
+    expect(fifth.items[0]).toMatchObject({ step: 'save', status: 'error', gaveUp: true, reason: 'gave up after 5 failed saves (could not save (timeout))' });
+    expect(fifth.items[0].deferred).toBeUndefined();
+    expect(seenFile(dataDir)).toContain(key);
+    expect(stateFile(dataDir).queue).toHaveLength(0);
+    expect(aiFetch.calls.extract).toHaveLength(1); // extracted once, then only saves were retried
+    expect(store.insertAttempts).toBe(5);
+    const sixth = await runOnce(agent);
+    expect(sixth.items).toHaveLength(0);
+  });
+
+  it('one-off: an article whose save failed before this fix comes back (but not give-ups)', async () => {
+    const dataDir = tmpDir();
+    const avalahalli = { title: 'Biker killed as truck hits him near Avalahalli', url: 'https://news.google.com/rss/articles/CBMiAVALA', link: 'https://www.deccanherald.com/avalahalli-crash' };
+    const gaveUp = { title: 'Old crash that could never be saved', url: 'https://news.google.com/rss/articles/CBMiGAVE' };
+    const laterImported = { title: 'Crash that failed then got saved', url: 'https://news.google.com/rss/articles/CBMiLATER' };
+    fs.writeFileSync(path.join(dataDir, 'agent-runs.json'), JSON.stringify([
+      { id: 'run_2', items: [
+        { ...avalahalli, step: 'save', status: 'error', reason: 'could not save (new row for relation "accidents" violates check constraint "accidents_status_check")' },
+        { ...gaveUp, step: 'save', status: 'error', gaveUp: true, reason: 'gave up after 5 failed saves (timeout)' },
+        { ...laterImported, step: 'save', status: 'imported', reason: 'imported #1100' },
+      ] },
+      { id: 'run_1', items: [{ ...laterImported, step: 'save', status: 'error', reason: 'could not save (timeout)' }] },
+    ]));
+    const keys = [avalahalli.url, avalahalli.link, gaveUp.url, laterImported.url].map(urlKey);
+    fs.writeFileSync(path.join(dataDir, 'agent-seen.json'), JSON.stringify(keys));
+    fs.writeFileSync(path.join(dataDir, 'agent-state.json'), JSON.stringify({ recentTitles: [{ t: 'biker killed truck hits him near avalahalli', title: avalahalli.title, at: Date.now() }] }));
+
+    const rss = googleRss([{ title: avalahalli.title, publisher: 'Deccan Herald', link: avalahalli.url }]);
+    const { agent, store } = makeAgent({ dataDir, fetchUrl: makeFeedFetch({ gdelt: { articles: [] }, rss }) });
+    const seen = seenFile(dataDir);
+    expect(seen).not.toContain(urlKey(avalahalli.url));
+    expect(seen).not.toContain(urlKey(avalahalli.link));
+    expect(seen).toContain(urlKey(gaveUp.url));
+    expect(seen).toContain(urlKey(laterImported.url));
+    expect(stateFile(dataDir)).toMatchObject({ saveErrorsUnseen: true, recentTitles: [] });
+
+    const run = await runOnce(agent);
+    expect(run.items.find(i => i.url === avalahalli.url)).toMatchObject({ status: 'imported' });
+    expect(store.inserted).toHaveLength(1);
+
+    // It only happens once: a later agent start leaves the seen-list alone.
+    const before = seenFile(dataDir);
+    makeAgent({ dataDir });
+    expect(seenFile(dataDir)).toEqual(before);
+  });
+});
+
+describe('Kannada Google News query', () => {
+  const kannadaQuery = 'ಬೆಂಗಳೂರು ಅಪಘಾತ';
+  const isKannadaQuery = (u) => new URL(u).searchParams.get('q').startsWith(kannadaQuery);
+
+  it('falls back to the English India edition when the Kannada edition has nothing', async () => {
+    const rss = (u) => {
+      if (u.includes('hl=kn')) return googleRss([]);
+      if (isKannadaQuery(u)) return googleRss([GOOGLE_ITEMS[2]]);
+      return googleRss([GOOGLE_ITEMS[0]]);
+    };
+    const fetchUrl = makeFeedFetch({ gdelt: { articles: [] }, rss });
+    const { agent, store } = makeAgent({ fetchUrl });
+    const run = await runOnce(agent);
+    const kannadaCalls = fetchUrl.mock.calls.map(([u]) => u).filter(u => u.startsWith('https://news.google.com/rss/search') && isKannadaQuery(u));
+    expect(kannadaCalls).toHaveLength(2);
+    expect(kannadaCalls[0]).toMatch(/hl=kn&gl=IN&ceid=IN:kn$/);
+    expect(kannadaCalls[1]).toMatch(/hl=en-IN&gl=IN&ceid=IN:en$/);
+    expect(run.sources[`Google News: ${kannadaQuery}`]).toEqual({ ok: true, count: 1, edition: 'en-IN' });
+    expect(run.log.some(l => l.endsWith(`SEARCH Google News: ${kannadaQuery} (Kannada edition): 0 results (HTTP 200, content-type application/rss+xml)`))).toBe(true);
+    expect(run.log.some(l => l.endsWith(`SEARCH Google News: ${kannadaQuery} (English India edition): 1 results`))).toBe(true);
+    expect(run.log.some(l => /<rss|<\?xml|<channel/.test(l))).toBe(false); // never the body
+    expect(store.inserted.map(r => r.link)).toEqual(expect.arrayContaining(['https://news.google.com/rss/articles/CBMiCCC333']));
+  });
+
+  it('keeps the Kannada edition when it has results', async () => {
+    const fetchUrl = makeFeedFetch({ gdelt: { articles: [] } });
+    const run = await runOnce(makeAgent({ fetchUrl }).agent);
+    const kannadaCalls = fetchUrl.mock.calls.map(([u]) => u).filter(u => u.startsWith('https://news.google.com/rss/search') && isKannadaQuery(u));
+    expect(kannadaCalls).toHaveLength(1);
+    expect(run.sources[`Google News: ${kannadaQuery}`]).toEqual({ ok: true, count: 3, edition: 'kn' });
+    expect(run.log.some(l => l.endsWith(`SEARCH Google News: ${kannadaQuery} (Kannada edition): 3 results`))).toBe(true);
+  });
+
+  it('an English feed with 0 items logs its status and content type', async () => {
+    const fetchUrl = makeFeedFetch({ gdelt: { articles: [] }, rss: (u) => (u.includes('hl=en-IN') ? googleRss([]) : GOOGLE_RSS) });
+    const run = await runOnce(makeAgent({ fetchUrl }).agent);
+    expect(run.log.some(l => l.endsWith('SEARCH Google News: Bengaluru accident: 0 results (HTTP 200, content-type application/rss+xml)'))).toBe(true);
   });
 });
 

@@ -28,10 +28,15 @@ export function parseQueries(raw) {
   return list.length ? list.map(s => s.slice(0, 120)) : DEFAULT_QUERIES.slice();
 }
 
-/** Google News RSS search feed; Kannada queries use the Kannada edition. */
-export function googleNewsUrl(query, days = 2) {
+export const isKannada = (s) => KANNADA.test(String(s ?? ''));
+
+/**
+ * Google News RSS search feed. `edition` is 'kn' (Kannada) or 'en' (English
+ * India); by default Kannada queries use the Kannada edition.
+ */
+export function googleNewsUrl(query, days = 2, edition = isKannada(query) ? 'kn' : 'en') {
   const q = encodeURIComponent(`${query} when:${days}d`);
-  return KANNADA.test(query)
+  return edition === 'kn'
     ? `https://news.google.com/rss/search?q=${q}&hl=kn&gl=IN&ceid=IN:kn`
     : `https://news.google.com/rss/search?q=${q}&hl=en-IN&gl=IN&ceid=IN:en`;
 }

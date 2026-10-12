@@ -7,7 +7,7 @@
  * lands as a pending accident for approval.
  */
 import { fetchCapped, decodeEntities } from './sources.mjs';
-import { X_MARKER, MAX_AGE_DAYS, istDate, addDays } from './pipeline.mjs';
+import { X_MARKER, MAX_AGE_DAYS, STATUS_CHECK_PROBLEM, istDate, addDays } from './pipeline.mjs';
 import { createAiGate, agentModels, SITE_RESERVE } from './news-agent.mjs';
 
 export const MAX_X_LINKS = 20;
@@ -134,7 +134,9 @@ export function createXImporter({
       titleStyle: isTrafficPolice ? 'traffic-police' : 'severity',
       marker: X_MARKER,
     }, { llm: gate.call, models, today });
-    const out = { ...base, canonicalUrl, status: res.status, reason: res.reason };
+    // The database refusing Pending rows is a setup problem, not a bad post: say what fixes it.
+    const reason = res.statusCheck ? `${STATUS_CHECK_PROBLEM}; import the post again once that is done` : res.reason;
+    const out = { ...base, canonicalUrl, status: res.status, reason };
     if (res.id) out.id = res.id;
     if (res.duplicateOf) out.duplicateOf = res.duplicateOf;
     return out;

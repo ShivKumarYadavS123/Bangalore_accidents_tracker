@@ -7,14 +7,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import {
-  looksLikeAccident, classifyAndExtract, locate, checkDuplicate, createImportPipeline,
-  addDays, AGENT_MARKER, STATUSES,
+  looksLikeAccident, classifyAndExtract, locate, checkDuplicate, createImportPipeline, buildExtractionMessages,
+  addDays, AGENT_MARKER, STATUSES, NO_PLACE_LOCATION, NO_PLACE_NOTE, STATUS_CHECK_PROBLEM,
 } from '../agent/pipeline.mjs';
 import { createAccidentStore } from '../agent/store.mjs';
 import { chatJSON, resetBudget, clearLlmCache } from '../ai/llm.mjs';
 import { appendPublicAccident } from '../accident-json.js';
 import { chatReply } from './fixtures/ai-fixtures.js';
-import { extraction, notAccident, makeStore, tmpDir, TODAY } from './fixtures/agent-fixtures.js';
+import { extraction, notAccident, makeStore, tmpDir, TODAY, STATUS_CHECK_ERROR } from './fixtures/agent-fixtures.js';
 
 beforeEach(() => { process.env.OPENROUTER_API_KEY = 'test-key'; delete process.env.AI_DISABLE_LLM; resetBudget(); clearLlmCache(); });
 afterEach(() => { delete process.env.OPENROUTER_API_KEY; vi.restoreAllMocks(); });
@@ -91,7 +91,7 @@ describe('classifyAndExtract', () => {
   });
 
   it('retries a malformed reply once and accepts the second', async () => {
-    const { llm, fetchImpl } = scriptedLlm(extraction({ location: null }), extraction());
+    const { llm, fetchImpl } = scriptedLlm(extraction({ summary: null }), extraction());
     const r = await classifyAndExtract(ARTICLE, { llm });
     expect(r.status).toBe('ok');
     expect(fetchImpl).toHaveBeenCalledTimes(2);
@@ -318,6 +318,69 @@ describe('import pipeline', () => {
       const src = fs.readFileSync(new URL(`../agent/${f}`, import.meta.url), 'utf8');
       expect(src, f).not.toMatch(/import[^;]*accident-json/);
     }
+  });
+
+  it('a reply with no location is valid: saved as pending with no pin, for the admin to place', async () => {
+    const geocode = vi.fn(async () => ({ lat: 12.9177, lng: 77.6233 }));
+    const { pipeline, store, llm, fetchImpl } = setup({ reply: extraction({ location: null, area: null }), geocode });
+    const r = await pipeline.importItem(item({ text: ARTICLE.title }), { llm });
+    expect(fetchImpl).toHaveBeenCalledTimes(1); // accepted first time, not retried as "missing location"
+    expect(r).toMatchObject({ status: 'imported', has_coords: false, reason: 'imported #1191 (no exact place, set the pin)' });
+    expect(geocode).not.toHaveBeenCalled();
+    const row = store.inserted[0];
+    expect(row).toMatchObject({ status: 'pending', has_coords: false, location: NO_PLACE_LOCATION, title: `Fatal accident: ${NO_PLACE_LOCATION}` });
+    expect(row.description).toBe(`${extraction().summary} ${NO_PLACE_NOTE} (Found by BAT News Agent)`);
+    expect(store.insertCalls[0].loc).toEqual({ has_coords: false, lat: null, lng: null });
+  });
+
+  it('with no location but an area, the area is the location (still no pin)', async () => {
+    const geocode = vi.fn(async () => ({ lat: 12.9177, lng: 77.6233 }));
+    const { pipeline, store, llm } = setup({ reply: extraction({ location: '', area: 'Madiwala' }), geocode });
+    await pipeline.importItem(item(), { llm });
+    expect(geocode).not.toHaveBeenCalled();
+    expect(store.inserted[0]).toMatchObject({ location: 'Madiwala', area: 'Madiwala', has_coords: false, title: 'Fatal accident: Madiwala' });
+    expect(store.inserted[0].description).toContain(NO_PLACE_NOTE);
+  });
+
+  it('a reply with a location still geocodes as before', async () => {
+    const geocode = vi.fn(async () => ({ lat: 12.9177, lng: 77.6233 }));
+    const { pipeline, store, llm } = setup({ geocode });
+    await pipeline.importItem(item(), { llm });
+    expect(geocode).toHaveBeenCalledWith('Hosur Road near Silk Board junction', 'Madiwala');
+    expect(store.inserted[0]).toMatchObject({ has_coords: true, location: 'Hosur Road near Silk Board junction' });
+    expect(store.inserted[0].description).not.toContain(NO_PLACE_NOTE);
+  });
+
+  it('still requires summary and severity', async () => {
+    const { llm } = scriptedLlm(extraction({ summary: null, location: null }), extraction({ summary: null, location: null }));
+    expect((await classifyAndExtract(ARTICLE, { llm })).reason).toMatch(/summary/);
+    const { llm: llm2 } = scriptedLlm(extraction({ severity: null, location: null }), extraction({ severity: null, location: null }));
+    expect((await classifyAndExtract(ARTICLE, { llm: llm2 })).reason).toMatch(/severity/);
+  });
+
+  it('the prompt asks to leave location empty rather than guess', () => {
+    const user = buildExtractionMessages({ title: 't', text: 'x', url: 'https://a.com' })[1].content;
+    expect(user).toMatch(/If the text names no specific place, leave location null rather than guessing/);
+  });
+
+  it('a failed save hands back what is needed to retry it, without any AI call', async () => {
+    const { pipeline, store, llm, fetchImpl } = setup({ store: makeStore({ insertErrors: ['connection reset by peer'] }) });
+    const failed = await pipeline.importItem(item(), { llm });
+    expect(failed).toMatchObject({ status: 'error', step: 'save', saveFailed: true, statusCheck: false, reason: 'could not save (connection reset by peer)' });
+    expect(failed.retry).toEqual({ data: expect.objectContaining({ location: 'Hosur Road near Silk Board junction', severity: 'fatal' }), loc: { has_coords: true, lat: 12.9177, lng: 77.6233 }, dateAssumed: false });
+    expect(store.inserted).toHaveLength(0);
+    const calls = fetchImpl.mock.calls.length;
+    const retried = await pipeline.saveExtracted(item(), failed.retry.data, failed.retry.loc, { dateAssumed: failed.retry.dateAssumed });
+    expect(retried).toMatchObject({ status: 'imported', id: '1191' });
+    expect(fetchImpl.mock.calls.length).toBe(calls);
+    expect(store.inserted[0]).toMatchObject({ status: 'pending', link: ARTICLE.url, title: 'Fatal accident: Hosur Road near Silk Board junction' });
+  });
+
+  it('a status-check failure is recognised and explained', async () => {
+    const { pipeline, llm } = setup({ store: makeStore({ insertErrors: [STATUS_CHECK_ERROR] }) });
+    const r = await pipeline.importItem(item(), { llm });
+    expect(r).toMatchObject({ status: 'error', step: 'save', saveFailed: true, statusCheck: true, reason: STATUS_CHECK_PROBLEM });
+    expect(STATUS_CHECK_PROBLEM).toBe("database doesn't accept Pending records yet: the Supabase owner must run the accidents_status_check lines from Database/supabase-setup.sql");
   });
 
   it('saves one at a time so the same link is never inserted twice', async () => {
