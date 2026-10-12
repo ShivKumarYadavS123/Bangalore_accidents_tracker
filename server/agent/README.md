@@ -6,7 +6,7 @@ Nothing the agent finds reaches the public map until an admin approves it.
 
 ## What one run does
 
-1. **Search.** Fetches one Google News RSS search feed per query, plus one GDELT query, for the last 2 days. GDELT goes first because its links point straight at publishers. GDELT allows about one request every 5 seconds: if it answers "rate-limited", the agent waits 6 seconds and tries once more, then skips GDELT for that run (shown in amber as "GDELT: rate-limited, skipped", not as a failure). Results are merged and URLs cleaned (tracking parameters and fragments dropped). Then it drops:
+1. **Search.** Fetches one Google News RSS search feed per query, plus one GDELT query, for the last 2 days. GDELT goes first because its links point straight at publishers. GDELT allows about one request every 5 seconds: if it answers "rate-limited", the agent waits 6 seconds and tries once more, then skips GDELT for that run (shown in amber as "GDELT: rate-limited, skipped", not as a failure). A Google News feed that answers HTTP 404 or 5xx is tried once more after 3 seconds; if it fails again it is skipped for that run, also in amber ("Google News: <query>: didn't answer (HTTP 404), skipped"), not as a failure. Results are merged and URLs cleaned (tracking parameters and fragments dropped). Then it drops:
    - URLs already processed (`server/data/agent-seen.json`)
    - URLs already in `accidents.link`
    - headlines that are near-identical to another one in this run or in the last 7 days
@@ -55,7 +55,10 @@ Free OpenRouter models allow about 50 calls a day, shared by the whole site (Ask
 - Every request carries OpenRouter's reasoning control (`reasoning: { effort: "low", exclude: true }`, set by `AI_REASONING_EFFORT`). Reasoning ("thinking") models count their thinking against `max_tokens`; without this, Nemotron could spend the whole budget thinking and return an empty reply. Models that don't reason ignore it.
 - Token limits: triage 4,000, extraction 2,500.
 - No AI step starts while fewer than 10 site-wide free calls are left, so Ask BAT keeps working.
-- A 429 (rate limit) from OpenRouter ends the run at once.
+- An OpenRouter 429 (rate limit) comes in two kinds:
+  - **One free model is busy** ("... is temporarily rate-limited upstream", or its provider's limit): the next model in `AGENT_MODELS` is tried and the run carries on.
+  - **The account's free allowance is used up** ("free-models-per-day" or "free-models-per-min"), or the reason can't be read: no more AI calls this run. The run ends as **Rate limited**, and waiting items show "AI rate-limited (HTTP 429); will retry next run".
+  - If every model tried in one call answers 429, the run also ends as Rate limited.
 - When a limit is hit, the run log says "budget reached" and the remaining items wait for the next run.
 - **X imports** don't use the agent's daily budget, but they obey the same "keep 10 spare" rule and stop at a 429.
 
@@ -88,7 +91,8 @@ It reads `server/.env` the same way the server does, sends **one** triage reques
 
 - **Working:** an attempt with `HTTP 200`, `finish_reason: stop` and a non-empty reply, then `PASS`. Headlines [1] and [2] should be `KEPT`.
 - **Still broken:** `RESULT: FAIL` with every attempt showing `reply: (EMPTY)` / `finish_reason: length` and a large reasoning count. Try `AI_REASONING_EFFORT=minimal`, or put another free model first in `AGENT_MODELS`.
-- **HTTP 429** on every attempt: the free daily limit is used up; try again tomorrow.
+- **HTTP 429** with "rate-limited upstream": that free model is busy right now, and the next model is tried. Only a problem if every model says it; run the check again in a few minutes.
+- **HTTP 429** with "free-models-per-day": the free daily limit is used up; try again tomorrow.
 
 Exit code: 0 = triage works, 1 = no usable reply, 2 = `OPENROUTER_API_KEY` missing or AI turned off (no call made).
 

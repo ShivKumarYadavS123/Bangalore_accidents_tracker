@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css">
   <script src="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
   <link rel="stylesheet" href="css/main.css?v=2">
-  <link rel="stylesheet" href="css/admin.css?v=6">
+  <link rel="stylesheet" href="css/admin.css?v=7">
   <link rel="stylesheet" href="css/ai.css">
   <link rel="icon" type="image/png" href="logo-mark.png">
 </head>
@@ -112,16 +112,16 @@
     </div>
     <div class="toolbar-row toolbar-actions">
       <div class="tb-group tb-group--tools" role="group" aria-label="Records and tools">
-        <button type="button" class="tb-btn tb-btn--primary" id="pending-reports-tab" title="Show every record awaiting review: citizen reports, News Agent finds and X imports">Pending Reports</button>
-        <button type="button" class="tb-btn tb-btn--primary" id="upload-btn">+ Add Article</button>
-        <button type="button" class="tb-btn tb-btn--primary" id="agent-btn" title="Automatic news search for new Bengaluru accidents">News Agent</button>
-        <button type="button" class="tb-btn tb-btn--primary" id="x-import-btn" title="Import Bengaluru Traffic Police posts from X">Import from X</button>
+        <button type="button" class="tb-btn tb-btn--pending" id="pending-reports-tab" aria-pressed="false" title="Show every record awaiting review: citizen reports, News Agent finds and X imports">Pending Reports</button>
+        <button type="button" class="tb-btn tb-btn--add" id="upload-btn">+ Add Article</button>
+        <button type="button" class="tb-btn tb-btn--agent" id="agent-btn" title="Automatic news search for new Bengaluru accidents">News Agent</button>
+        <button type="button" class="tb-btn tb-btn--x" id="x-import-btn" title="Import Bengaluru Traffic Police posts from X">Import from X</button>
         <button type="button" class="tb-btn tb-btn--outline" id="image-lab-btn" title="Test any photo with the fake-image forensics">Image check</button>
         <button type="button" class="tb-btn tb-btn--outline" id="map-view-toggle" aria-pressed="false" title="Drag pins on a map to fix accident locations">Map View</button>
       </div>
       <div class="tb-group tb-group--bulk" role="group" aria-label="Selected records">
-        <button type="button" class="tb-btn tb-btn--outline" id="approve-selected">Approve Selected</button>
-        <button type="button" class="tb-btn tb-btn--outline" id="reject-selected">Reject Selected</button>
+        <button type="button" class="tb-btn tb-btn--primary" id="approve-selected">Approve Selected</button>
+        <button type="button" class="tb-btn tb-btn--primary" id="reject-selected">Reject Selected</button>
         <button type="button" class="tb-btn tb-btn--danger" id="delete-selected">Delete Selected</button>
       </div>
     </div>
@@ -151,7 +151,7 @@
         </tr>
       </thead>
       <tbody id="table-body">
-        <tr><td colspan="9" class="t-loading">Loading…</td></tr>
+        <tr><td colspan="10" class="t-loading">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -432,7 +432,7 @@
 <script src="js/ai-common.js"></script>
 <script src="js/admin-integrity.js"></script>
 <script src="js/admin-agent.js?v=2"></script>
-<script src="js/admin-app.js?v=6"></script>
+<script src="js/admin-app.js?v=7"></script>
 <script src="js/nav-active.js"></script>
 </body>
 </html>

@@ -32,6 +32,7 @@ export const TRIAGE_MAX_TOKENS = 4000;
 export const TRIAGE_ATTEMPTS = 3; // one model failing still leaves two others
 export const TRIAGE_GIVE_UP_RUNS = 3; // a headline the AI can't judge 3 runs in a row is finished as an error
 export const GDELT_RETRY_WAIT_MS = 6000; // GDELT allows about one request every 5 seconds
+export const FEED_RETRY_WAIT_MS = 3000; // a Google News feed that answered 404/5xx is tried once more
 
 /**
  * Free models for the agent (triage, extraction, X import), in order.
@@ -81,10 +82,41 @@ export function agentConfig(env = process.env) {
 
 // ── AI budget gate ───────────────────────────────────────────────────────────
 
+export const RATE_LIMIT_REASON = 'OpenRouter rate limit (HTTP 429)';
+
+/**
+ * An OpenRouter 429 means one of two things:
+ *  - one free model is busy ("... is temporarily rate-limited upstream", or its
+ *    provider's own limit): the next model in AGENT_MODELS may well answer;
+ *  - the account's free allowance is used up ("free-models-per-day" or
+ *    "free-models-per-min"), or the reason can't be read: every later call
+ *    would fail too.
+ * True only for the first case.
+ */
+export function isModelRateLimit(message) {
+  const m = String(message || '');
+  if (!m.trim() || /free-models-per-(day|min)/i.test(m)) return false;
+  return /rate[- ]?limit\w*[^.]{0,60}\b(upstream|provider)\b|\b(upstream|provider)\b[^.]{0,60}rate[- ]?limit/i.test(m);
+}
+
+/** The error text of a 429, read from a copy so chatJSON can still read the body. */
+async function rateLimitMessage(res) {
+  try {
+    const body = await (typeof res.clone === 'function' ? res.clone() : res).json();
+    const err = body?.error && typeof body.error === 'object' ? body.error : (body || {});
+    const raw = err.metadata?.raw;
+    return [err.message, typeof raw === 'string' ? raw : raw ? JSON.stringify(raw) : null].filter(s => typeof s === 'string').join(' ');
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Wraps chatJSON so every attempt is counted (through a counting fetch) and a
- * 429 is noticed. `limits(usedSoFar)` returns { left, reason } for the
- * caller's own budget; the site-wide reserve is always enforced.
+ * 429 is noticed. A 429 that only means "this model is busy" lets chatJSON try
+ * the next model; an account-level 429, or every model in one call answering
+ * 429, stops further AI calls. `limits(usedSoFar)` returns { left, reason } for
+ * the caller's own budget; the site-wide reserve is always enforced.
  */
 export function createAiGate({ chat = chatJSON, aiFetch = null, budgetStatus = llmBudgetStatus, siteReserve = SITE_RESERVE, limits = () => ({ left: Infinity }), onUse = () => {} } = {}) {
   let used = 0;
@@ -92,7 +124,7 @@ export function createAiGate({ chat = chatJSON, aiFetch = null, budgetStatus = l
   let stopReason = null;
 
   function allowance() {
-    if (rateLimited) { stopReason = 'OpenRouter rate limit (HTTP 429)'; return 0; }
+    if (rateLimited) { stopReason = RATE_LIMIT_REASON; return 0; }
     const site = budgetStatus().remaining;
     if (site < siteReserve) { stopReason = `only ${site} site-wide free AI calls left today (keeping ${siteReserve} for Ask BAT and other features)`; return 0; }
     const { left, reason } = limits(used);
@@ -108,16 +140,24 @@ export function createAiGate({ chat = chatJSON, aiFetch = null, budgetStatus = l
       throw e;
     }
     let attempts = 0;
+    let modelBusy = 0; // 429s that only meant "this model is busy"
     const base = aiFetch || globalThis.fetch;
     const fetchImpl = async (...args) => {
       if (rateLimited) throw new Error('OpenRouter rate limit (HTTP 429), not retrying');
       attempts++;
       const res = await base(...args);
-      if (res && res.status === 429) rateLimited = true;
-      return res;
+      if (res && res.status === 429) {
+        if (isModelRateLimit(await rateLimitMessage(res))) modelBusy++;
+        else rateLimited = true;
+      }
+      return res; // chatJSON reads the error and moves on to the next model
     };
     try {
       return await chat({ ...opts, maxAttempts: Math.min(opts.maxAttempts || 2, max), fetchImpl, cacheTtlMs: 0 });
+    } catch (e) {
+      // Every model this call tried was busy: treat it like an account-level limit.
+      if (attempts > 0 && modelBusy === attempts) rateLimited = true;
+      throw e;
     } finally {
       used += attempts;
       if (attempts) onUse(attempts);
@@ -129,7 +169,8 @@ export function createAiGate({ chat = chatJSON, aiFetch = null, budgetStatus = l
     call,
     get used() { return used; },
     get rateLimited() { return rateLimited; },
-    get stopReason() { return stopReason; },
+    // Never null after a 429 caught mid-call (allowance() may not have run since).
+    get stopReason() { return rateLimited ? RATE_LIMIT_REASON : stopReason; },
   };
 }
 
@@ -326,19 +367,40 @@ export function createNewsAgent({
 
   // ── Steps ──────────────────────────────────────────────────────────────────
 
+  /**
+   * One Google News feed. A 404 or 5xx is usually a passing hiccup: try the
+   * same feed once more after 3 s, then skip it for this run (shown in amber,
+   * like a rate-limited GDELT, not as a failure).
+   */
   async function fetchFeed(run, name, url, accept, parse) {
-    try {
-      const r = await fetchUrl(url, { maxBytes: 3 * 1024 * 1024, timeoutMs: 15000, accept });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const items = parse(r.text);
-      run.sources[name] = { ok: true, count: items.length };
-      log(run, `SEARCH ${name}: ${items.length} results`);
-      return items;
-    } catch (e) {
-      run.sources[name] = { ok: false, count: 0, error: short(e) };
-      log(run, `SEARCH ${name}: failed (${short(e)}), skipped`);
-      return [];
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const r = await fetchUrl(url, { maxBytes: 3 * 1024 * 1024, timeoutMs: 15000, accept });
+        if (!r.ok) {
+          if (r.status === 404 || r.status >= 500) {
+            if (attempt === 1) {
+              log(run, `SEARCH ${name}: HTTP ${r.status}, trying again in ${FEED_RETRY_WAIT_MS / 1000} s`);
+              await sleep(FEED_RETRY_WAIT_MS);
+              continue;
+            }
+            const why = `didn't answer (HTTP ${r.status})`;
+            run.sources[name] = { ok: false, skipped: true, count: 0, error: why };
+            log(run, `SEARCH ${name}: ${why}, skipped`);
+            return [];
+          }
+          throw new Error(`HTTP ${r.status}`);
+        }
+        const items = parse(r.text);
+        run.sources[name] = { ok: true, count: items.length };
+        log(run, `SEARCH ${name}: ${items.length} results`);
+        return items;
+      } catch (e) {
+        run.sources[name] = { ok: false, count: 0, error: short(e) };
+        log(run, `SEARCH ${name}: failed (${short(e)}), skipped`);
+        return [];
+      }
     }
+    return [];
   }
 
   /**
@@ -470,8 +532,12 @@ export function createNewsAgent({
     const stop = (step) => {
       if (stopped) return;
       stopped = true;
-      log(run, `${step}: ${gate.rateLimited ? 'OpenRouter rate limit (HTTP 429), stopping this run' : `budget reached (${gate.stopReason})`}`);
+      log(run, `${step}: ${gate.rateLimited ? 'OpenRouter rate limit (HTTP 429), stopping this run' : `budget reached (${gate.stopReason || 'AI limit reached'})`}`);
     };
+    // Why an item waits for a later run: a 429, or a budget limit (never "null").
+    const waitReason = () => (gate.rateLimited
+      ? 'AI rate-limited (HTTP 429); will retry next run'
+      : `waiting for AI budget (${gate.stopReason || 'AI limit reached'})`);
 
     try {
       log(run, `Run started (${run.trigger}, last ${run.days} day${run.days === 1 ? '' : 's'}); AI calls used today ${day.aiCalls}/${cfg.dailyAi}`);
@@ -498,7 +564,7 @@ export function createNewsAgent({
         const batch = passed.slice(i, i + TRIAGE_BATCH);
         if (stopped || gate.allowance() < 1) {
           stop('TRIAGE');
-          batch.forEach(c => defer(run, c, 'triage', `waiting for AI budget (${gate.stopReason})`));
+          batch.forEach(c => defer(run, c, 'triage', waitReason()));
           continue;
         }
         try {
@@ -513,7 +579,7 @@ export function createNewsAgent({
           if (e.code === 'AI_BUDGET' || gate.rateLimited) {
             // Budget or rate limit: says nothing about these headlines, so it doesn't count as a failure.
             stop('TRIAGE');
-            batch.forEach(c => defer(run, c, 'triage', `waiting for AI budget (${gate.stopReason})`));
+            batch.forEach(c => defer(run, c, 'triage', waitReason()));
             continue;
           }
           log(run, `TRIAGE: batch ${i / TRIAGE_BATCH + 1} failed (${short(e, 600)})`);
@@ -540,7 +606,7 @@ export function createNewsAgent({
         if (stopped || gate.allowance() < 1) {
           stop('READ');
           requeue(item);
-          defer(run, item, 'read', `waiting for AI budget (${gate.stopReason})`);
+          defer(run, item, 'read', waitReason());
           continue;
         }
         if (idx > 0) await sleep(cfg.requestDelayMs);
@@ -563,7 +629,7 @@ export function createNewsAgent({
         if (blocked || (res.status === 'error' && res.retryable && (item.tries || 0) < 1)) {
           // Not a verdict on the article: try it again in a later run.
           requeue(item, (item.tries || 0) + (blocked ? 0 : 1));
-          defer(run, item, res.step, blocked ? `waiting for AI budget (${gate.stopReason})` : `${res.reason}; will retry next run`);
+          defer(run, item, res.step, blocked ? waitReason() : `${res.reason}; will retry next run`);
           if (blocked) stop('EXTRACT');
           continue;
         }
@@ -577,7 +643,7 @@ export function createNewsAgent({
       });
 
       run.status = gate.rateLimited ? 'rate_limited' : stopped ? 'budget_reached' : 'completed';
-      run.stopReason = stopped ? gate.stopReason : null;
+      run.stopReason = stopped ? (gate.stopReason || 'AI limit reached') : null;
     } catch (e) {
       run.status = 'failed';
       run.stopReason = short(e);

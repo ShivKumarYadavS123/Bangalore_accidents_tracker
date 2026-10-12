@@ -278,6 +278,7 @@
 
   async function loadData(page = 1) {
     curPage = page;
+    syncPendingButton();
     const search   = document.getElementById('search-box').value.trim();
     const status   = document.getElementById('f-status').value;
     const severity = document.getElementById('f-severity').value;
@@ -307,7 +308,7 @@
     qs.set('sortOrder', sortOrder);
 
     const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '<tr><td colspan="9" class="t-loading">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="t-loading">Loading…</td></tr>';
 
     try {
       const r = await authenticatedFetch(`${API}/api/admin/accidents?${qs}`);
@@ -322,7 +323,7 @@
         loadMapPins();
       }
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="9" class="t-loading" style="color:#dc2626">Error: ${e.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="t-loading" style="color:#dc2626">Error: ${e.message}</td></tr>`;
     }
   }
 
@@ -411,7 +412,7 @@
   function renderTable(rows) {
     const tbody = document.getElementById('table-body');
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="t-loading">No records found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="t-loading">No records found.</td></tr>';
       return;
     }
 
@@ -426,7 +427,8 @@
         ? `<span>${parseFloat(r.lat).toFixed(4)}, ${parseFloat(r.lng).toFixed(4)}</span>`
         : `<span class="no-coords">No coords</span>`;
       const stClass = r.status === 'active' ? 'status-active' : r.status === 'pending' ? 'status-pending' : 'status-hidden';
-      const stLabel = r.status === 'active' ? '● Active' : r.status === 'pending' ? '◌ Pending' : '○ Hidden';
+      // Plain labels: the status-badge ::before already draws the coloured dot.
+      const stLabel = r.status === 'active' ? 'Active' : r.status === 'pending' ? 'Pending' : 'Hidden';
       // Checkbox cell for bulk actions
       const checkboxCell = `<td><input type="checkbox" class="row-select" data-id="${esc(r.id)}" aria-label="Select ${esc(r.id)}"></td>`;
 
@@ -1209,12 +1211,32 @@
 
   // ── Filters ───────────────────────────────────────────────────────────────
 
+  const PENDING_TITLE = 'Show every record awaiting review: citizen reports, News Agent finds and X imports';
+
+  /** The Pending Reports button reads "All Records" (pressed) while the table shows pending rows. */
+  function syncPendingButton() {
+    const btn = document.getElementById('pending-reports-tab');
+    if (!btn) return;
+    const showingPending = document.getElementById('f-status').value === 'pending';
+    btn.textContent = showingPending ? 'All Records' : 'Pending Reports';
+    btn.title = showingPending ? 'Show every record again' : PENDING_TITLE;
+    btn.setAttribute('aria-pressed', String(showingPending));
+    btn.classList.toggle('is-showing-pending', showingPending);
+  }
+
   document.getElementById('apply-btn').addEventListener('click', () => loadData(1));
   document.getElementById('search-box').addEventListener('keydown', e => { if (e.key === 'Enter') loadData(1); });
+  document.getElementById('f-status').addEventListener('change', () => loadData(1));
+  document.getElementById('f-severity').addEventListener('change', () => loadData(1));
   document.getElementById('f-sort').addEventListener('change', () => loadData(1));
   document.getElementById('pending-reports-tab')?.addEventListener('click', () => {
-    document.getElementById('f-status').value = 'pending';
-    document.getElementById('search-box').value = '';
+    const status = document.getElementById('f-status');
+    if (status.value === 'pending') {
+      status.value = 'all';
+    } else {
+      status.value = 'pending';
+      document.getElementById('search-box').value = '';
+    }
     loadData(1);
   });
 

@@ -32,11 +32,42 @@ describe('admin toolbar', () => {
     expect(idsIn('tb-group--bulk')).toEqual(['approve-selected', 'reject-selected', 'delete-selected']);
   });
 
-  it('buttons use one style set: filled, outlined, or red for delete', () => {
+  it('buttons keep their own colours: orange, green, indigo, dark, primary, outlined, red', () => {
     const cls = (id) => (html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))?.[0].match(/class="([^"]+)"/) || [])[1] || '';
-    for (const id of ['apply-btn', 'pending-reports-tab', 'upload-btn', 'agent-btn', 'x-import-btn']) expect(cls(id), id).toMatch(/\btb-btn--primary\b/);
-    for (const id of ['image-lab-btn', 'map-view-toggle', 'approve-selected', 'reject-selected']) expect(cls(id), id).toMatch(/\btb-btn--outline\b/);
-    expect(cls('delete-selected')).toMatch(/\btb-btn--danger\b/);
+    const expected = {
+      'pending-reports-tab': 'tb-btn--pending',
+      'upload-btn': 'tb-btn--add',
+      'agent-btn': 'tb-btn--agent',
+      'x-import-btn': 'tb-btn--x',
+      'apply-btn': 'tb-btn--primary',
+      'approve-selected': 'tb-btn--primary',
+      'reject-selected': 'tb-btn--primary',
+      'image-lab-btn': 'tb-btn--outline',
+      'map-view-toggle': 'tb-btn--outline',
+      'delete-selected': 'tb-btn--danger',
+    };
+    for (const [id, modifier] of Object.entries(expected)) {
+      expect(cls(id), id).toMatch(new RegExp(`\\btb-btn\\b`));
+      expect(cls(id), id).toMatch(new RegExp(`\\b${modifier}\\b`));
+    }
+    const css = fs.readFileSync(new URL('../../css/admin.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.tb-btn--pending \{ background: var\(--color-serious\)/);
+    expect(css).toMatch(/\.tb-btn--add \{ background: var\(--color-minor\)/);
+    expect(css).toMatch(/\.tb-btn--agent \{ background: #4f46e5/);
+    expect(css).toMatch(/\.tb-btn--agent:hover \{ background: #4338ca/);
+    expect(css).toMatch(/\.tb-btn--x \{ background: #0f172a/);
+    expect(css).toMatch(/\.tb-btn--x:hover \{ background: #1e293b/);
+    expect(css).toMatch(/\.tb-btn--pending\.is-showing-pending \{ background: var\(--color-primary\)/);
+    expect(css).toMatch(/\.tb-btn:focus-visible \{ outline:/);
+  });
+
+  it('the table header sticks to the top of its own scroll box', () => {
+    const css = fs.readFileSync(new URL('../../css/admin.css', import.meta.url), 'utf8');
+    const th = css.match(/\.data-table th \{[^}]*\}/)[0];
+    expect(th).toMatch(/position: sticky;/);
+    expect(th).toMatch(/top: 0;/);
+    expect(css).not.toMatch(/top: 64px/);
+    expect(html).not.toMatch(/colspan="9"/);
   });
 
   it('has no emoji on toolbar buttons and no inline styles anywhere', () => {

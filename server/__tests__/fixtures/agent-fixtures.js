@@ -95,8 +95,10 @@ export function fetched(text, { status = 200, url, contentType = 'text/html; cha
  * Fake fetchUrl for the agent: GDELT, Google News RSS, Google article links
  * (which stay on Google, like the real ones) and publisher pages.
  */
-export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, fail = [], hold = null, gdeltLimited = [] } = {}) {
+export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, fail = [], hold = null, gdeltLimited = [], rssStatuses = {} } = {}) {
   let gdeltCalls = 0;
+  // rssStatuses: { 'url part': [404, 503, ...] } answers the next matching Google News requests with those statuses.
+  const rssQueue = Object.fromEntries(Object.entries(rssStatuses).map(([k, v]) => [k, [...v]]));
   return vi.fn(async (url, opts = {}) => {
     if (hold) await hold;
     if (fail.some(f => url.includes(f))) throw new Error('connect ECONNREFUSED');
@@ -107,7 +109,12 @@ export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles =
       if (limited === 'text') return fetched('Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries.', { url, contentType: 'text/html' });
       return fetched(JSON.stringify(gdelt), { url, contentType: 'application/json' });
     }
-    if (url.startsWith('https://news.google.com/rss/search')) return fetched(typeof rss === 'function' ? rss(url) : rss, { url, contentType: 'application/rss+xml' });
+    if (url.startsWith('https://news.google.com/rss/search')) {
+      const key = Object.keys(rssQueue).find(k => url.includes(k) && rssQueue[k].length);
+      const status = key ? rssQueue[key].shift() : 200;
+      if (status !== 200) return fetched('', { status, url, bodySkipped: true });
+      return fetched(typeof rss === 'function' ? rss(url) : rss, { url, contentType: 'application/rss+xml' });
+    }
     if (url.startsWith('https://news.google.com/rss/articles/')) {
       // Real Google News article links answer 200 on news.google.com; the caller must not read them.
       const skipped = typeof opts.skipBodyIf === 'function' && opts.skipBodyIf(url);
@@ -118,6 +125,20 @@ export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles =
   });
 }
 
+/** An OpenRouter error response, shaped like the real ones (with clone(), like a fetch Response). */
+export function openRouterError(status, message, raw = null) {
+  const body = { error: { message, code: status, ...(raw ? { metadata: { raw, provider_name: 'Test provider' } } : {}) } };
+  const res = { ok: false, status, headers: { get: () => 'application/json' }, json: async () => body, clone: () => res };
+  return res;
+}
+
+/** OpenRouter's 429 when one free model is busy at its provider (the next model may work). */
+export const upstreamLimited = (model) => openRouterError(429, 'Provider returned error',
+  `${model} is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations`);
+
+/** OpenRouter's 429 when the account's free daily allowance is used up. */
+export const freeDailyLimit = () => openRouterError(429, 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day');
+
 /**
  * Fake OpenRouter for the budget gate: answers triage prompts with `keep(n)`
  * and extraction prompts with `extract(userPrompt)`.
@@ -127,9 +148,7 @@ export function makeAi({ keep = (n) => Array.from({ length: n }, (_, i) => ({ i:
   const fn = vi.fn(async (_url, init) => {
     const body = JSON.parse(init.body);
     const user = body.messages[body.messages.length - 1].content;
-    if (status !== 200) {
-      return { ok: false, status, headers: { get: () => 'application/json' }, json: async () => ({ error: { message: 'Rate limit exceeded: free-models-per-day' } }) };
-    }
+    if (status !== 200) return openRouterError(status, 'Rate limit exceeded: free-models-per-day');
     if (user.includes('<<<HEADLINES')) {
       const n = (user.match(/^\[\d+\]/gm) || []).length;
       calls.triage.push(n);

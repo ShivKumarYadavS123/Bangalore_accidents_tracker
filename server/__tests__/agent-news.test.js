@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { createNewsAgent, parseTriage, agentModels, TRIAGE_BATCH, DEFAULT_AGENT_MODELS } from '../agent/news-agent.mjs';
+import { createNewsAgent, parseTriage, agentModels, isModelRateLimit, TRIAGE_BATCH, DEFAULT_AGENT_MODELS } from '../agent/news-agent.mjs';
 import { chatReply, jsonResponse } from './fixtures/ai-fixtures.js';
 import { createImportPipeline, istDate } from '../agent/pipeline.mjs';
 import {
@@ -15,7 +15,7 @@ import {
 import { resetBudget, clearLlmCache } from '../ai/llm.mjs';
 import {
   GOOGLE_RSS, GOOGLE_ITEMS, GDELT_JSON, GDELT_URLS, CRASH_ARTICLE, googleRss, extraction,
-  makeFeedFetch, makeAi, makeStore, tmpDir, silentLogger,
+  makeFeedFetch, makeAi, makeStore, tmpDir, silentLogger, openRouterError, upstreamLimited, freeDailyLimit,
 } from './fixtures/agent-fixtures.js';
 
 beforeEach(() => { process.env.OPENROUTER_API_KEY = 'test-key'; delete process.env.AI_DISABLE_LLM; resetBudget(); clearLlmCache(); });
@@ -313,6 +313,7 @@ describe('News Agent run', () => {
 
 describe('News Agent AI calls', () => {
   const oneHeadline = () => makeFeedFetch({ gdelt: { articles: [] }, rss: googleRss([GOOGLE_ITEMS[0]]) });
+  const upstreamLimitedText = (model) => `${model} is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits.`;
   const emptyThinkingReply = () => jsonResponse({
     model: 'nvidia/nemotron',
     choices: [{ finish_reason: 'length', message: { content: '' } }],
@@ -382,12 +383,125 @@ describe('News Agent AI calls', () => {
     expect(r4.counts.alreadySeen).toBe(1);
   });
 
+  it('tells a busy model apart from the account limit', () => {
+    expect(isModelRateLimit(upstreamLimitedText('google/gemma-4-31b-it:free'))).toBe(true);
+    expect(isModelRateLimit('Provider rate limit exceeded, please retry')).toBe(true);
+    expect(isModelRateLimit('Rate limit exceeded: free-models-per-day. Add 10 credits')).toBe(false);
+    expect(isModelRateLimit('Rate limit exceeded: free-models-per-min.')).toBe(false);
+    expect(isModelRateLimit('Provider returned error')).toBe(false);
+    expect(isModelRateLimit('')).toBe(false);
+  });
+
+  it('a 429 from a model that is busy upstream hands over to the next model, and the run completes', async () => {
+    const [first, second] = DEFAULT_AGENT_MODELS;
+    const sent = [];
+    const aiFetch = vi.fn(async (_u, init) => {
+      const body = JSON.parse(init.body);
+      sent.push(body.model);
+      if (body.model === first) return upstreamLimited(first);
+      return isTriage(body) ? chatReply({ keep: [{ i: 1, reason: 'crash' }] }) : chatReply(extraction());
+    });
+    const { agent, store } = makeAgent({ fetchUrl: oneHeadline(), aiFetch });
+    const run = await runOnce(agent);
+    expect(run.status).toBe('completed');
+    expect(run.stopReason).toBeNull();
+    expect(sent).toEqual([first, second, first, second]); // triage, then extraction: busy model, then the next one
+    expect(run.counts.imported).toBe(1);
+    expect(store.inserted).toHaveLength(1);
+    expect(run.aiCalls).toBe(4);
+  });
+
+  it('a free-models-per-day 429 stops the run as rate limited', async () => {
+    const aiFetch = vi.fn(async () => freeDailyLimit());
+    const { agent, store } = makeAgent({ fetchUrl: oneHeadline(), aiFetch });
+    const run = await runOnce(agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('rate_limited');
+    expect(run.stopReason).toBe('OpenRouter rate limit (HTTP 429)');
+    expect(run.items[0]).toMatchObject({ deferred: true, reason: 'AI rate-limited (HTTP 429); will retry next run' });
+    expect(store.inserted).toHaveLength(0);
+  });
+
+  it('a 429 without a readable reason also stops the run', async () => {
+    const aiFetch = vi.fn(async () => openRouterError(429, ''));
+    const run = await runOnce(makeAgent({ fetchUrl: oneHeadline(), aiFetch }).agent);
+    expect(aiFetch).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('rate_limited');
+  });
+
+  it('a 429 from every model gives rate_limited', async () => {
+    const sent = [];
+    const aiFetch = vi.fn(async (_u, init) => { const { model } = JSON.parse(init.body); sent.push(model); return upstreamLimited(model); });
+    const run = await runOnce(makeAgent({ fetchUrl: oneHeadline(), aiFetch }).agent);
+    expect(sent).toEqual(DEFAULT_AGENT_MODELS);
+    expect(run.status).toBe('rate_limited');
+    expect(run.items[0].reason).toBe('AI rate-limited (HTTP 429); will retry next run');
+  });
+
+  it('a 429 caught mid-extraction says "rate-limited", and no message ever contains null or undefined', async () => {
+    const triageThenDailyLimit = () => vi.fn(async (_u, init) => (isTriage(JSON.parse(init.body)) ? chatReply({ keep: [{ i: 1 }, { i: 2 }, { i: 3 }] }) : freeDailyLimit()));
+    const scenarios = {
+      'daily limit on the first call': { aiFetch: vi.fn(async () => freeDailyLimit()) },
+      'daily limit during extraction': { aiFetch: triageThenDailyLimit() },
+      'every model busy': { aiFetch: vi.fn(async (_u, init) => upstreamLimited(JSON.parse(init.body).model)) },
+      'site-wide budget low': { budgetStatus: () => ({ limit: 45, used: 40, remaining: 5 }) },
+      'per-run budget used by triage': { env: { AGENT_MAX_AI_CALLS_PER_RUN: '1' } },
+      'daily budget used': { env: { AGENT_DAILY_AI_BUDGET: '1' } },
+    };
+    for (const [name, opts] of Object.entries(scenarios)) {
+      const run = await runOnce(makeAgent({ fetchUrl: makeFeedFetch(), ...opts }).agent);
+      const texts = [run.stopReason, ...run.log, ...run.items.map(i => i.reason), ...Object.values(run.sources).map(s => s.error)].filter(t => t != null);
+      expect(texts.length, name).toBeGreaterThan(0);
+      for (const t of texts) expect(String(t), `${name}: ${t}`).not.toMatch(/\bnull\b|\bundefined\b/);
+      if (name === 'daily limit during extraction') {
+        expect(run.status).toBe('rate_limited');
+        expect(run.items.filter(i => i.deferred).map(i => i.reason)).toContain('AI rate-limited (HTTP 429); will retry next run');
+      }
+      if (name === 'per-run budget used by triage') {
+        expect(run.items.filter(i => i.deferred)[0].reason).toBe('waiting for AI budget (per-run AI limit reached (1 calls))');
+      }
+    }
+  });
+
   it('waiting for budget does not count as a failed triage', async () => {
     const { agent } = makeAgent({ fetchUrl: oneHeadline(), budgetStatus: () => ({ limit: 45, used: 40, remaining: 5 }) });
     for (let i = 0; i < 4; i++) {
       const run = await runOnce(agent);
       expect(run.items[0]).toMatchObject({ deferred: true, reason: expect.stringMatching(/waiting for AI budget/) });
     }
+  });
+});
+
+describe('Google News feed errors', () => {
+  const feed = 'Google News: Bengaluru accident';
+  const englishCalls = (fetchUrl) => fetchUrl.mock.calls.filter(([u]) => u.startsWith('https://news.google.com/rss/search') && u.includes('hl=en-IN'));
+
+  it('a 404 is tried once more after 3 seconds', async () => {
+    const sleep = vi.fn(async () => {});
+    const fetchUrl = makeFeedFetch({ rssStatuses: { 'hl=en-IN': [404] } });
+    const run = await runOnce(makeAgent({ fetchUrl, sleep }).agent);
+    expect(englishCalls(fetchUrl)).toHaveLength(2);
+    expect(sleep).toHaveBeenCalledWith(3000);
+    expect(run.sources[feed]).toEqual({ ok: true, count: 3 });
+  });
+
+  it('a 404 twice is skipped in amber, not a failure', async () => {
+    const fetchUrl = makeFeedFetch({ rssStatuses: { 'hl=en-IN': [404, 404] } });
+    const { agent, store } = makeAgent({ fetchUrl });
+    const run = await runOnce(agent);
+    expect(englishCalls(fetchUrl)).toHaveLength(2);
+    expect(run.sources[feed]).toEqual({ ok: false, skipped: true, count: 0, error: "didn't answer (HTTP 404)" });
+    expect(run.log.some(l => l.endsWith("SEARCH Google News: Bengaluru accident: didn't answer (HTTP 404), skipped"))).toBe(true);
+    expect(run.log.some(l => /Bengaluru accident: failed/.test(l))).toBe(false);
+    expect(run.status).toBe('completed');
+    expect(agent.status().lastRuns[0].sources[feed]).toEqual({ ok: false, count: 0, skipped: true });
+    expect(store.inserted.length).toBeGreaterThan(0); // the other feeds still came through
+  });
+
+  it('a 5xx is retried the same way', async () => {
+    const fetchUrl = makeFeedFetch({ rssStatuses: { 'hl=en-IN': [503] } });
+    const run = await runOnce(makeAgent({ fetchUrl }).agent);
+    expect(run.sources[feed]).toEqual({ ok: true, count: 3 });
   });
 });
 

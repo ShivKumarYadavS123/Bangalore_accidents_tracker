@@ -105,7 +105,10 @@ if (failure) {
   line(`  ${String(failure.message).slice(0, 800)}`);
   line('  If every attempt says "Empty model reply (finish_reason=length ...)", the models are still');
   line('  spending max_tokens on reasoning: try AI_REASONING_EFFORT=minimal, or put a different free');
-  line('  model first in AGENT_MODELS. HTTP 429 means the free daily limit is used up (try tomorrow).');
+  line('  model first in AGENT_MODELS.');
+  line('  HTTP 429 "rate-limited upstream" means that free model is busy right now (the next model is');
+  line('  tried); if every model says it, run the check again in a few minutes.');
+  line('  HTTP 429 "free-models-per-day" means the free daily limit is used up (try tomorrow).');
   process.exit(1);
 }
 
