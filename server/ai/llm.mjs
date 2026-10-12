@@ -123,12 +123,42 @@ function balancedEnd(s, start) {
   return -1;
 }
 
+// ── Reasoning control ────────────────────────────────────────────────────────
+
+export const REASONING_EFFORTS = ['max', 'xhigh', 'high', 'medium', 'low', 'minimal', 'none'];
+
+/**
+ * OpenRouter's unified reasoning control, sent with every request. Reasoning
+ * tokens count against max_tokens on most providers, so a "thinking" model
+ * left alone can spend the whole budget thinking and return empty content.
+ * Low effort keeps the thinking short and `exclude` keeps it out of the reply.
+ * Models that don't reason ignore it (OpenRouter's default routing drops
+ * parameters a provider doesn't support).
+ * AI_REASONING_EFFORT: low (default), minimal, medium, high, none, ... or off to send nothing.
+ */
+export function reasoningParam(env = process.env) {
+  const v = String(env.AI_REASONING_EFFORT ?? '').trim().toLowerCase();
+  if (v === 'off' || v === 'false') return null;
+  return { effort: REASONING_EFFORTS.includes(v) ? v : 'low', exclude: true };
+}
+
+/** "finish_reason=length, completion_tokens=1500, reasoning_tokens=1490" for error messages. */
+function finishDetails(choice, usage) {
+  const parts = [`finish_reason=${choice?.finish_reason ?? choice?.native_finish_reason ?? 'unknown'}`];
+  if (Number.isFinite(usage?.completion_tokens)) parts.push(`completion_tokens=${usage.completion_tokens}`);
+  const reasoning = usage?.completion_tokens_details?.reasoning_tokens ?? usage?.reasoning_tokens;
+  if (Number.isFinite(reasoning)) parts.push(`reasoning_tokens=${reasoning}`);
+  return parts.join(', ');
+}
+
 // ── Chat call ────────────────────────────────────────────────────────────────
 
 /**
- * Call free chat models and return { json, text, model }.
+ * Call free chat models and return { json, text, model, finishReason, usage }.
  * Tries each model in `models` (default: textModels()) until one returns
  * parseable JSON; at most `maxAttempts` calls, each counted against the budget.
+ * A malformed reply retries the same model once; an empty reply or an HTTP
+ * error moves to the next model.
  * Throws when all attempts fail so callers can use their deterministic fallback.
  * `content` in messages may be a string or an OpenAI-style multimodal array.
  */
@@ -143,8 +173,9 @@ export async function chatJSON({ messages, model, models, maxAttempts = 3, tempe
   const errors = [];
   let attempts = 0;
   for (const chosen of candidates) {
-    // A malformed reply is often a one-off, so retry the same model once;
-    // HTTP errors (rate limits, outages) move straight to the next model.
+    // A malformed reply is often a one-off, so retry the same model once.
+    // An empty reply (typically a reasoning model that used max_tokens on
+    // thinking) and HTTP errors (rate limits, outages) move to the next model.
     for (let tryNo = 0; tryNo < 2 && attempts < Math.max(1, maxAttempts); tryNo++) {
       attempts++;
       try {
@@ -155,7 +186,8 @@ export async function chatJSON({ messages, model, models, maxAttempts = 3, tempe
       } catch (e) {
         errors.push(`${chosen}: ${e.message}`);
         if (/budget/i.test(e.message)) throw new Error(errors.join(' | '));
-        if (!/JSON|Empty model reply|missing|Reply/i.test(e.message)) break;
+        if (e.code === 'EMPTY_REPLY') break;
+        if (!/JSON|missing|Reply/i.test(e.message)) break;
       }
     }
     if (attempts >= maxAttempts) break;
@@ -186,13 +218,19 @@ async function callOnce({ chosen, messages, temperature, maxTokens, timeoutMs, f
         temperature,
         max_tokens: maxTokens,
         response_format: { type: 'json_object' },
+        ...(reasoningParam() ? { reasoning: reasoningParam() } : {}),
       }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${body?.error?.message || 'error'}`);
-    const text = body?.choices?.[0]?.message?.content;
-    if (!text) throw new Error('Empty model reply');
-    return { json: extractJson(text), text, model: body.model || chosen };
+    const choice = body?.choices?.[0];
+    const text = choice?.message?.content;
+    if (!text) {
+      const e = new Error(`Empty model reply (${finishDetails(choice, body?.usage)})`);
+      e.code = 'EMPTY_REPLY';
+      throw e;
+    }
+    return { json: extractJson(text), text, model: body.model || chosen, finishReason: choice?.finish_reason ?? null, usage: body?.usage ?? null };
   } finally {
     clearTimeout(timer);
   }

@@ -2,7 +2,7 @@
  * News Agent / X import UI helpers: the map popup's source wording and the
  * admin source badges. Runs the real functions from the shipped files.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'fs';
 
 const src = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
@@ -91,10 +91,100 @@ describe('admin source badges', () => {
     expect(agent.parseLines(' https://x.com/a/status/1 \r\n\n https://x.com/b/status/2\n')).toEqual(['https://x.com/a/status/1', 'https://x.com/b/status/2']);
   });
 
+  it('exposes openRun for the panel', () => {
+    expect(typeof agent.openRun).toBe('function');
+  });
+
   it('labels every pipeline status', () => {
     for (const s of ['imported', 'duplicate', 'not_accident', 'outside_bangalore', 'invalid_link', 'error', 'deferred']) {
       expect(agent.statusLabel(s)).not.toBe(s);
     }
     expect(agent.statusLabel('outside_bangalore')).toBe('Not in Bangalore');
+  });
+});
+
+/** Just enough DOM for admin-agent.js: elements, text, children, click listeners. */
+function fakeDom(ids) {
+  class FakeEl {
+    constructor(tag) { this.tagName = String(tag).toUpperCase(); this.children = []; this.attrs = {}; this.listeners = {}; this.hidden = false; this.disabled = false; this.value = ''; this.className = ''; this._text = ''; this.classList = { toggle() {}, add() {}, remove() {} }; }
+    get textContent() { return this._text + this.children.map(c => c.textContent).join(''); }
+    set textContent(v) { this._text = String(v); this.children = []; }
+    appendChild(c) { this.children.push(c); return c; }
+    replaceChildren(...kids) { this._text = ''; this.children = kids; }
+    setAttribute(k, v) { this.attrs[k] = v; }
+    addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
+    click() { (this.listeners.click || []).forEach(fn => fn({ target: this, currentTarget: {} })); }
+    focus() {}
+  }
+  const byId = Object.fromEntries(ids.map(id => [id, new FakeEl('div')]));
+  const document = {
+    createElement: (tag) => new FakeEl(tag),
+    createTextNode: (t) => ({ textContent: String(t) }),
+    getElementById: (id) => byId[id],
+    addEventListener() {},
+  };
+  return { document, byId };
+}
+
+describe('News Agent panel: run detail follows a running run', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('re-fetches the open run when the status poll sees it finish', async () => {
+    vi.useFakeTimers();
+    const ids = ['agent-btn', 'agent-close', 'agent-close-btn', 'agent-back', 'agent-run-btn', 'agent-backfill-btn', 'agent-modal',
+      'agent-status', 'agent-run-hint', 'agent-runs-view', 'agent-run-detail', 'agent-run-detail-body', 'agent-runs'];
+    const { document, byId } = fakeDom(ids);
+    byId['agent-modal'].hidden = true;
+    byId['agent-run-detail'].hidden = true;
+
+    const base = { enabled: true, ready: true, aiCallsToday: 1, dailyAiBudget: 20, maxAiCallsPerRun: 8, siteAi: { remaining: 40, limit: 45, reserve: 10 }, queueLength: 0 };
+    const summary = { id: 'run_A', trigger: 'manual', days: 2, startedAt: '2026-10-12T10:00:00.000Z', aiCalls: 1, counts: { imported: 0 } };
+    const statuses = [
+      { ...base, running: true, currentRun: { ...summary, status: 'running' }, lastRuns: [] }, // panel opens
+      { ...base, running: true, currentRun: { ...summary, status: 'running' }, lastRuns: [] }, // first poll: still going
+      { ...base, running: false, currentRun: null, lastRuns: [{ ...summary, status: 'completed', aiCalls: 3, counts: { imported: 2 } }] }, // second poll: done
+    ];
+    const runningDetail = { ...summary, running: true, status: 'running', sources: {}, items: [], log: ['Run started'] };
+    const doneDetail = {
+      ...summary, status: 'completed', aiCalls: 3, counts: { imported: 2, not_accident: 1 },
+      sources: { GDELT: { ok: false, skipped: true, count: 0, error: 'rate-limited' }, 'Google News: Bengaluru accident': { ok: true, count: 3 } },
+      items: [{ title: 'Two killed as lorry rams bike on Hosur Road', url: 'https://news.google.com/rss/articles/A', status: 'imported', reason: 'imported #1191' }],
+      log: ['Run started', 'SEARCH GDELT: rate-limited, skipped', 'DONE: 2 imported'],
+    };
+    let statusCalls = 0;
+    let runCalls = 0;
+    const fetch = vi.fn(async (url) => {
+      let body;
+      if (url.endsWith('/api/admin/agent/status')) body = statuses[Math.min(statusCalls++, statuses.length - 1)];
+      else if (url.endsWith('/api/admin/agent/runs/run_A')) body = runCalls++ === 0 ? runningDetail : doneDetail;
+      else throw new Error(`unexpected ${url}`);
+      return { ok: true, status: 200, json: async () => body };
+    });
+
+    const window = { confirm: () => true };
+    new Function('window', 'document', src('admin-agent.js'))(window, document);
+    window.BATAgent.init({ fetch, api: 'http://api', toast: vi.fn(), onChange: vi.fn() });
+
+    byId['agent-btn'].click();
+    await vi.advanceTimersByTimeAsync(0);
+    await window.BATAgent.openRun('run_A');
+    const detail = () => byId['agent-run-detail-body'].textContent;
+    expect(detail()).toMatch(/Running/);
+    expect(runCalls).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(5000); // poll 1: still running, no re-fetch
+    expect(runCalls).toBe(1);
+    expect(detail()).toMatch(/Running/);
+
+    await vi.advanceTimersByTimeAsync(5000); // poll 2: finished, re-fetch the open run
+    expect(runCalls).toBe(2);
+    expect(detail()).toMatch(/Completed/);
+    expect(detail()).not.toMatch(/Running/);
+    expect(detail()).toMatch(/2 imported/);
+    expect(detail()).toMatch(/Two killed as lorry rams bike on Hosur Road/);
+    expect(detail()).toMatch(/GDELT: rate-limited, skipped/);
+
+    await vi.advanceTimersByTimeAsync(20000); // polling stopped once the run finished
+    expect(statusCalls).toBe(3);
   });
 });

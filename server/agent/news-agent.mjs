@@ -19,7 +19,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { chatJSON, budgetStatus as llmBudgetStatus } from '../ai/llm.mjs';
+import { chatJSON, budgetStatus as llmBudgetStatus, ensureFreeModel } from '../ai/llm.mjs';
 import {
   fetchCapped, googleNewsUrl, gdeltUrl, parseGoogleNewsRss, parseGdelt, parseQueries,
   normalizeUrl, urlKey, titleTokens, similarTitles, isGoogleHost, htmlToText, metaContent, publisherFromUrl,
@@ -28,6 +28,23 @@ import { looksLikeAccident, neutralise, istDate, AGENT_MARKER } from './pipeline
 
 export const SITE_RESERVE = 10;
 export const TRIAGE_BATCH = 30;
+export const TRIAGE_MAX_TOKENS = 4000;
+export const TRIAGE_ATTEMPTS = 3; // one model failing still leaves two others
+export const TRIAGE_GIVE_UP_RUNS = 3; // a headline the AI can't judge 3 runs in a row is finished as an error
+export const GDELT_RETRY_WAIT_MS = 6000; // GDELT allows about one request every 5 seconds
+
+/**
+ * Free models for the agent (triage, extraction, X import), in order.
+ * Gemma first: it answers directly, while Nemotron is a reasoning model that
+ * can spend max_tokens thinking and return nothing.
+ */
+export const DEFAULT_AGENT_MODELS = ['google/gemma-4-31b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'openrouter/free'];
+
+/** AGENT_MODELS (comma-separated) or the defaults; paid ids are replaced by the free router. */
+export function agentModels(env = process.env) {
+  const list = String(env.AGENT_MODELS || '').split(',').map(s => s.trim()).filter(Boolean);
+  return [...new Set((list.length ? list : DEFAULT_AGENT_MODELS).map(m => ensureFreeModel(m)))];
+}
 const SEEN_MAX = 5000;
 const RUNS_MAX = 50;
 const ITEMS_MAX = 300;
@@ -38,8 +55,8 @@ const WEEK_MS = 7 * 24 * 3600 * 1000;
 
 const defaultSleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-function short(e) {
-  return String(e?.message || e).replace(/sk-[A-Za-z0-9_-]{8,}/g, '[redacted]').replace(/\s+/g, ' ').slice(0, 200);
+function short(e, max = 200) {
+  return String(e?.message || e).replace(/sk-[A-Za-z0-9_-]{8,}/g, '[redacted]').replace(/\s+/g, ' ').slice(0, max);
 }
 
 function int(v, def, min, max) {
@@ -56,6 +73,7 @@ export function agentConfig(env = process.env) {
     maxReads: int(env.AGENT_MAX_READS_PER_RUN, 8, 1, 50),
     maxAiPerRun: int(env.AGENT_MAX_AI_CALLS_PER_RUN, 8, 1, 50),
     dailyAi: int(env.AGENT_DAILY_AI_BUDGET, 20, 0, 1000),
+    models: agentModels(env),
     firstRunDelayMs: 2 * 60 * 1000,
     requestDelayMs: 1500,
   };
@@ -79,7 +97,7 @@ export function createAiGate({ chat = chatJSON, aiFetch = null, budgetStatus = l
     if (site < siteReserve) { stopReason = `only ${site} site-wide free AI calls left today (keeping ${siteReserve} for Ask BAT and other features)`; return 0; }
     const { left, reason } = limits(used);
     if (left < 1) { stopReason = reason || 'AI limit reached'; return 0; }
-    return Math.min(2, left);
+    return left;
   }
 
   async function call(opts) {
@@ -187,6 +205,8 @@ export function createNewsAgent({
     lastRunAt: raw.lastRunAt || null,
     queue: Array.isArray(raw.queue) ? raw.queue.filter(x => x && x.key && x.url) : [],
     recentTitles: Array.isArray(raw.recentTitles) ? raw.recentTitles.filter(x => x && typeof x.t === 'string') : [],
+    // url key → { n: runs in a row where triage failed, at: last failure time }
+    triageFails: raw.triageFails && typeof raw.triageFails === 'object' && !Array.isArray(raw.triageFails) ? raw.triageFails : {},
   };
   const seenRaw = readJson(files.seen, []);
   const seenList = (Array.isArray(seenRaw) ? seenRaw : []).filter(k => typeof k === 'string').slice(-SEEN_MAX);
@@ -210,6 +230,8 @@ export function createNewsAgent({
     const cutoff = now() - WEEK_MS;
     state.recentTitles = state.recentTitles.filter(r => r.at >= cutoff).slice(-RECENT_TITLES_MAX);
     state.queue = state.queue.slice(-QUEUE_MAX);
+    const fails = Object.entries(state.triageFails).filter(([, v]) => v && Number.isFinite(v.n) && v.at >= cutoff);
+    state.triageFails = Object.fromEntries(fails.slice(-2000));
     writeJson(files.state, state);
   }
 
@@ -267,6 +289,7 @@ export function createNewsAgent({
   function finish(run, c, step, status, reason, extra = {}) {
     record(run, c, step, status, reason, extra);
     markSeen(c.key);
+    delete state.triageFails[c.key];
     if (extra.link) markSeen(urlKey(extra.link));
     const tokens = c.tokens || titleTokens(c.title, c.publisher);
     if (tokens.length) state.recentTitles.push({ t: tokens.join(' '), title: String(c.title).slice(0, 160), at: now() });
@@ -297,7 +320,7 @@ export function createNewsAgent({
     return {
       id: r.id, trigger: r.trigger, days: r.days, startedAt: r.startedAt, endedAt: r.endedAt,
       status: r.status, stopReason: r.stopReason, aiCalls: r.aiCalls, counts: r.counts,
-      sources: Object.fromEntries(Object.entries(r.sources).map(([k, v]) => [k, { ok: v.ok, count: v.count }])),
+      sources: Object.fromEntries(Object.entries(r.sources).map(([k, v]) => [k, { ok: v.ok, count: v.count, ...(v.skipped ? { skipped: true } : {}) }])),
     };
   }
 
@@ -318,9 +341,46 @@ export function createNewsAgent({
     }
   }
 
+  /**
+   * One GDELT request per run. GDELT allows about one request every 5 seconds:
+   * on a rate limit (HTTP 429, or its "please limit requests" text) wait 6 s and
+   * try once more, then skip it for this run. A skip is not a failure.
+   */
+  async function searchGdelt(run) {
+    const name = 'GDELT';
+    const url = gdeltUrl(run.days, run.trigger === 'backfill' ? 250 : 100);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const r = await fetchUrl(url, { maxBytes: 3 * 1024 * 1024, timeoutMs: 15000, accept: 'application/json' });
+        const body = String(r.text || '');
+        const limited = r.status === 429 || (r.ok && !body.trim().startsWith('{') && /limit requests/i.test(body.slice(0, 300)));
+        if (limited) {
+          if (attempt === 1) {
+            log(run, `SEARCH ${name}: rate-limited, waiting ${GDELT_RETRY_WAIT_MS / 1000} s to try once more`);
+            await sleep(GDELT_RETRY_WAIT_MS);
+            continue;
+          }
+          run.sources[name] = { ok: false, skipped: true, count: 0, error: 'rate-limited' };
+          log(run, `SEARCH ${name}: rate-limited, skipped`);
+          return [];
+        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const items = parseGdelt(body);
+        run.sources[name] = { ok: true, count: items.length };
+        log(run, `SEARCH ${name}: ${items.length} results`);
+        return items;
+      } catch (e) {
+        run.sources[name] = { ok: false, count: 0, error: short(e) };
+        log(run, `SEARCH ${name}: failed (${short(e)}), skipped`);
+        return [];
+      }
+    }
+    return [];
+  }
+
   async function search(run) {
     // GDELT first: its links point straight at publishers, so it wins near-identical headlines.
-    const gdelt = await fetchFeed(run, 'GDELT', gdeltUrl(run.days, run.trigger === 'backfill' ? 250 : 100), 'application/json', parseGdelt);
+    const gdelt = await searchGdelt(run);
     const google = [];
     for (const query of cfg.queries) {
       await sleep(cfg.requestDelayMs);
@@ -360,9 +420,10 @@ export function createNewsAgent({
   async function triageBatch(batch, gate) {
     const out = await gate.call({
       messages: buildTriageMessages(batch),
-      maxAttempts: 2,
+      models: cfg.models,
+      maxAttempts: TRIAGE_ATTEMPTS,
       temperature: 0,
-      maxTokens: 1500,
+      maxTokens: TRIAGE_MAX_TOKENS,
       timeoutMs: 60000,
       validate: (j) => parseTriage(j, batch.length),
     });
@@ -443,15 +504,31 @@ export function createNewsAgent({
         try {
           const keep = await triageBatch(batch, gate);
           batch.forEach((c, idx) => {
+            delete state.triageFails[c.key];
             if (keep.has(idx)) kept.push({ ...c, triageReason: keep.get(idx) });
             else finish(run, c, 'triage', 'not_accident', 'triage: not a specific road crash in Bangalore');
           });
           log(run, `TRIAGE: batch ${i / TRIAGE_BATCH + 1}: kept ${keep.size} of ${batch.length}`);
         } catch (e) {
-          if (e.code === 'AI_BUDGET' || gate.rateLimited) stop('TRIAGE');
-          const why = e.code === 'AI_BUDGET' || gate.rateLimited ? `waiting for AI budget (${gate.stopReason})` : `triage failed (${short(e)}), will retry next run`;
-          batch.forEach(c => defer(run, c, 'triage', why));
-          if (!stopped) log(run, `TRIAGE: batch ${i / TRIAGE_BATCH + 1} failed (${short(e)})`);
+          if (e.code === 'AI_BUDGET' || gate.rateLimited) {
+            // Budget or rate limit: says nothing about these headlines, so it doesn't count as a failure.
+            stop('TRIAGE');
+            batch.forEach(c => defer(run, c, 'triage', `waiting for AI budget (${gate.stopReason})`));
+            continue;
+          }
+          log(run, `TRIAGE: batch ${i / TRIAGE_BATCH + 1} failed (${short(e, 600)})`);
+          let gaveUp = 0;
+          batch.forEach(c => {
+            const n = (state.triageFails[c.key]?.n || 0) + 1;
+            if (n >= TRIAGE_GIVE_UP_RUNS) {
+              finish(run, c, 'triage', 'error', `AI could not judge this headline (triage failed ${n} runs in a row)`);
+              gaveUp++;
+            } else {
+              state.triageFails[c.key] = { n, at: now() };
+              defer(run, c, 'triage', `triage failed (${short(e)}), will retry next run (${n} of ${TRIAGE_GIVE_UP_RUNS})`);
+            }
+          });
+          if (gaveUp) log(run, `TRIAGE: gave up on ${gaveUp} headline(s) after ${TRIAGE_GIVE_UP_RUNS} failed runs in a row`);
         }
       }
 
@@ -481,7 +558,7 @@ export function createNewsAgent({
           fallbackPublisher: publisherFromUrl(page.link),
           marker: AGENT_MARKER,
           titleStyle: 'severity',
-        }, { llm: gate.call, today: istDate(now()) });
+        }, { llm: gate.call, models: cfg.models, today: istDate(now()) });
         const blocked = res.status === 'error' && (res.budget || gate.rateLimited);
         if (blocked || (res.status === 'error' && res.retryable && (item.tries || 0) < 1)) {
           // Not a verdict on the article: try it again in a later run.
@@ -594,6 +671,7 @@ export function createNewsAgent({
       siteAi: { ...budgetStatus(), reserve: SITE_RESERVE },
       queueLength: state.queue.length,
       queries: cfg.queries,
+      models: cfg.models,
       lastRuns: runs.slice(0, 10).map(summarize),
     };
   }

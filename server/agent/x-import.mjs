@@ -8,7 +8,7 @@
  */
 import { fetchCapped, decodeEntities } from './sources.mjs';
 import { X_MARKER, MAX_AGE_DAYS, istDate, addDays } from './pipeline.mjs';
-import { createAiGate, SITE_RESERVE } from './news-agent.mjs';
+import { createAiGate, agentModels, SITE_RESERVE } from './news-agent.mjs';
 
 export const MAX_X_LINKS = 20;
 const TWITTER_EPOCH = 1288834974657n;
@@ -75,6 +75,7 @@ export function createXImporter({
   chat, aiFetch = null, budgetStatus, logger = console, sleep = (ms) => new Promise(r => setTimeout(r, ms)), now = () => Date.now(),
 } = {}) {
   const btpHandles = trafficPoliceHandles(env);
+  const models = agentModels(env);
 
   async function fetchPost(canonicalUrl) {
     let r;
@@ -132,7 +133,7 @@ export function createXImporter({
       sourceName: isTrafficPolice ? 'Bengaluru Traffic Police (X)' : `X: @${handle}`,
       titleStyle: isTrafficPolice ? 'traffic-police' : 'severity',
       marker: X_MARKER,
-    }, { llm: gate.call, today });
+    }, { llm: gate.call, models, today });
     const out = { ...base, canonicalUrl, status: res.status, reason: res.reason };
     if (res.id) out.id = res.id;
     if (res.duplicateOf) out.duplicateOf = res.duplicateOf;

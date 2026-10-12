@@ -7,7 +7,6 @@
 
   let token    = sessionStorage.getItem(TOKEN_KEY) || '';
   let curPage  = 1;
-  let curTotal = 0;
   let editMap  = null;
   let editMarker = null;
   let editingId  = null;
@@ -116,13 +115,15 @@
   // Integrity UI (admin-integrity.js) uses the same authenticated fetch.
   setTimeout(() => window.BATIntegrity?.init(authenticatedFetch, API), 0);
   // News Agent panel + Import from X (admin-agent.js); imports refresh the table.
-  setTimeout(() => window.BATAgent?.init({ fetch: authenticatedFetch, api: API, toast, onChange: () => loadData(curPage) }), 0);
+  setTimeout(() => window.BATAgent?.init({ fetch: authenticatedFetch, api: API, toast, onChange: () => { loadData(curPage); loadStats(); } }), 0);
 
   async function authenticatedFetch(url, options = {}) {
     // Merge auth headers with any additional headers
     options.headers = { ...authHeaders(), ...(options.headers || {}) };
 
     const r = await fetch(url, options);
+    // Any successful admin change (approve, reject, delete, import…) can change the stat cards.
+    if (r.ok && options.method && options.method.toUpperCase() !== 'GET') scheduleStatsRefresh();
 
     if (r.status === 401) {
       // Attempt token refresh (Req 5.5)
@@ -253,6 +254,7 @@
       showApp(displayName);
       await loadConfig();
       loadData();
+      loadStats();
     } catch (err) {
       errEl.textContent = err.message;
       errEl.hidden = false;
@@ -311,13 +313,11 @@
       const r = await authenticatedFetch(`${API}/api/admin/accidents?${qs}`);
       if (r.status === 401) return; // Already handled by authenticatedFetch (redirect to login)
       const data = await r.json();
-      curTotal = data.total;
       lastRows = data.rows;
       renderTable(data.rows);
       renderPagination(data.total, isIdSort ? 1 : page, limit);
       document.getElementById('record-count').textContent =
         `${data.total} record${data.total !== 1 ? 's' : ''}`;
-      updateStats(data.rows);
       if (mapViewActive) {
         loadMapPins();
       }
@@ -326,14 +326,38 @@
     }
   }
 
-  function updateStats(rows) {
-    const all = (allMapRows && allMapRows.length > 0) ? allMapRows : rows;
-    document.getElementById('s-total').textContent   = curTotal || all.length;
-    document.getElementById('s-active').textContent  = all.filter(r => r.status === 'active').length;
-    document.getElementById('s-hidden').textContent  = all.filter(r => r.status === 'hidden').length;
-    document.getElementById('s-fatal').textContent   = all.filter(r => r.severity === 'fatal').length;
-    document.getElementById('s-serious').textContent = all.filter(r => r.severity === 'serious').length;
-    document.getElementById('s-minor').textContent   = all.filter(r => r.severity === 'minor').length;
+  // ── Stat cards: database-wide totals, whatever the filter or page ─────────
+
+  let statsTimer = null;
+
+  async function loadStats() {
+    try {
+      const r = await authenticatedFetch(`${API}/api/admin/stats`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const s = await r.json();
+      const show = (id, n) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = Number.isFinite(n) ? n.toLocaleString() : '—';
+      };
+      show('s-total', s.total);
+      show('s-active', s.active);
+      show('s-pending', s.pending);
+      // Rejected records are hidden from the public too, so they count here.
+      show('s-hidden', (s.hidden || 0) + (s.rejected || 0));
+      const hiddenBox = document.getElementById('s-hidden-box');
+      if (hiddenBox) hiddenBox.title = `${s.hidden || 0} hidden, ${s.rejected || 0} rejected`;
+      show('s-fatal', s.fatal);
+      show('s-serious', s.serious);
+      show('s-minor', s.minor);
+    } catch (e) {
+      console.warn('[admin-app] Record counts unavailable:', e.message);
+    }
+  }
+
+  /** After approve / reject / delete / import (any admin change), refresh the cards once. */
+  function scheduleStatsRefresh() {
+    clearTimeout(statsTimer);
+    statsTimer = setTimeout(loadStats, 400);
   }
 
   function updateRowInTable(id, lat, lng, location, area) {
@@ -836,9 +860,6 @@
         hintEl.innerHTML = `📍 Showing all <strong>${withCoordsCount}</strong> accidents on the map. Drag any pin to update coordinates. Changes save automatically.`;
       }
 
-      if (!search && status === 'all' && severity === 'all') {
-        updateStats(allMapRows);
-      }
     } catch (e) {
       console.error('Failed to load all map pins:', e);
       if (mapViewActive) renderMapPins(lastRows);
@@ -861,9 +882,9 @@
     if (tableWrap) tableWrap.hidden = mapViewActive;
     if (pagination) pagination.hidden = mapViewActive;
     if (btn) {
-      btn.textContent = mapViewActive ? '📋 Table View' : '🗺️ Map View';
-      btn.style.background = mapViewActive ? 'var(--color-primary)' : '#fff';
-      btn.style.color = mapViewActive ? '#fff' : 'var(--color-primary)';
+      btn.textContent = mapViewActive ? 'Table View' : 'Map View';
+      btn.classList.toggle('is-active', mapViewActive);
+      btn.setAttribute('aria-pressed', String(mapViewActive));
     }
 
     if (mapViewActive) {
@@ -1738,6 +1759,7 @@
       showApp(displayName);
       await loadConfig();
       loadData();
+      loadStats();
       loadMapPins();
     } else {
       token = '';

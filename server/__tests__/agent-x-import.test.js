@@ -122,7 +122,7 @@ describe('X batch import', () => {
   }
 
   it('returns one result per link, in order, with mixed statuses', async () => {
-    const { importer, store, fetchUrl } = setup();
+    const { importer, store, fetchUrl, aiFetch } = setup();
     const results = await importer.importLinks([
       `https://x.com/blrcitytraffic/status/${REAL_ID}`,
       `https://twitter.com/blrcitytraffic/status/${REAL_ID}?s=20`,
@@ -156,6 +156,10 @@ describe('X batch import', () => {
     expect(spoof).toMatchObject({ source: 'X: @randomuser', title: 'Fatal accident: Bellary Road near Hebbal', link: `https://x.com/randomuser/status/${IDS.spoof}` });
     expect(results[7].canonicalUrl).toBe(`https://x.com/randomuser/status/${IDS.spoof}`);
     expect(store.inserted).toHaveLength(2);
+
+    // Extraction uses the agent model order and 2500 tokens.
+    const firstAiBody = JSON.parse(aiFetch.mock.calls[0][1].body);
+    expect(firstAiBody).toMatchObject({ model: 'google/gemma-4-31b-it:free', max_tokens: 2500, reasoning: { effort: 'low', exclude: true } });
 
     // Only X's official oEmbed endpoint is called, never the pasted URL; no call for duplicates, bad links or old posts.
     for (const [u] of fetchUrl.mock.calls) expect(u.startsWith('https://publish.x.com/oembed?url=https%3A%2F%2Fx.com%2F')).toBe(true);

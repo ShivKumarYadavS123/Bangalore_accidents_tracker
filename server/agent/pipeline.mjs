@@ -183,18 +183,22 @@ function shortError(e) {
 // so callers may try the item again later instead of marking it done.
 const TRANSIENT = /HTTP (408|429|5\d\d)|abort|timed? ?out|fetch failed|ECONN|ENOTFOUND|EAI_AGAIN|network/i;
 
+export const EXTRACT_MAX_TOKENS = 2500;
+
 /**
  * One free-LLM call that decides and extracts. `llm` defaults to chatJSON;
- * the agent passes its budget-counting wrapper. Never throws.
+ * the agent passes its budget-counting wrapper and its model order (`models`).
+ * At most 2 attempts, so one article can't use up many free calls. Never throws.
  */
-export async function classifyAndExtract({ title, text, url, publishedAt = null, publisher = null, kind = 'news' }, { llm = chatJSON, today, maxAgeDays = MAX_AGE_DAYS, maxAttempts = 2, timeoutMs = 60000 } = {}) {
+export async function classifyAndExtract({ title, text, url, publishedAt = null, publisher = null, kind = 'news' }, { llm = chatJSON, models = null, today, maxAgeDays = MAX_AGE_DAYS, maxAttempts = 2, timeoutMs = 60000 } = {}) {
   let out;
   try {
     out = await llm({
       messages: buildExtractionMessages({ title, text, url, publishedAt, publisher, kind }),
+      ...(models?.length ? { models } : {}),
       maxAttempts,
       temperature: 0,
-      maxTokens: 1500,
+      maxTokens: EXTRACT_MAX_TOKENS,
       timeoutMs,
       cacheTtlMs: 0,
       validate: checkShape,
@@ -344,7 +348,7 @@ export function createImportPipeline({ store, geocode = null, inferZone = () => 
    * item: { title, text, link, altLinks?, xPostId?, publishedAt?, fallbackDate?, publisher?,
    *         fallbackPublisher?, sourceName?, titleStyle?, marker?, kind: 'news'|'x' }
    */
-  async function importItem(item, { llm: callLlm = llm, today = istDate(now()), maxAgeDays = MAX_AGE_DAYS } = {}) {
+  async function importItem(item, { llm: callLlm = llm, models = null, today = istDate(now()), maxAgeDays = MAX_AGE_DAYS } = {}) {
     const result = (status, step, reason, extra = {}) => ({ status, step, reason, link: item.link, ...extra });
     if (!item?.link) return result('invalid_link', 'dedupe', 'no link');
 
@@ -359,7 +363,7 @@ export function createImportPipeline({ store, geocode = null, inferZone = () => 
     // 2. Classify and extract.
     const ex = await classifyAndExtract(
       { title: item.title, text: item.text, url: item.link, publishedAt: item.publishedAt, publisher: item.publisher, kind: item.kind },
-      { llm: callLlm, today, maxAgeDays },
+      { llm: callLlm, models, today, maxAgeDays },
     );
     if (ex.status !== 'ok') return result(ex.status, 'extract', ex.reason, { budget: ex.budget, retryable: ex.retryable });
     const data = { ...ex.data };

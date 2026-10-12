@@ -36,6 +36,8 @@
   let pollTimer = null;
   let pollUntil = 0;
   let watchingRunId = null;
+  let openRunId = null; // run shown in the detail view
+  let openRunRunning = false; // whether that run was still running when last fetched
   let wired = false;
 
   // ── Pure helpers (also used by admin-app.js and the tests) ─────────────────
@@ -194,18 +196,38 @@
   }
 
   function showRunList() {
+    openRunId = null;
+    openRunRunning = false;
     $('agent-runs-view').hidden = false;
     $('agent-run-detail').hidden = true;
   }
 
-  async function openRun(id) {
+  function sourceLine(name, s) {
+    if (s.ok) return el('li', { text: `${name}: ${s.count} results` });
+    if (s.skipped) return el('li', { class: 'skipped', text: `${name}: ${s.error || 'rate-limited'}, skipped` });
+    return el('li', { class: 'failed', text: `${name}: failed (${s.error || 'error'}), skipped` });
+  }
+
+  function logLines(lines) {
+    return lines.map(l => el('span', {
+      class: /rate-limited|budget reached|deferred|will retry/i.test(l) ? 'log-warn' : /failed|error/i.test(l) ? 'log-fail' : null,
+      text: `${l}\n`,
+    }));
+  }
+
+  /** Show one run. `quiet` re-renders in place (used when a run finishes) without the loading placeholder. */
+  async function openRun(id, { quiet = false } = {}) {
+    openRunId = id;
     $('agent-runs-view').hidden = true;
     $('agent-run-detail').hidden = false;
     const body = $('agent-run-detail-body');
-    body.replaceChildren(el('p', { class: 'agent-note', text: 'Loading run…' }));
+    if (!quiet) body.replaceChildren(el('p', { class: 'agent-note', text: 'Loading run…' }));
     try {
       const run = await getJson(`${API}/api/admin/agent/runs/${encodeURIComponent(id)}`);
-      const sources = Object.entries(run.sources || {}).map(([name, s]) => el('li', { class: s.ok ? '' : 'failed', text: s.ok ? `${name}: ${s.count} results` : `${name}: failed (${s.error || 'error'}), skipped` }));
+      if (openRunId !== id) return; // the admin moved on while this was loading
+      openRunRunning = Boolean(run.running);
+      if (openRunRunning && !pollTimer) startPolling();
+      const sources = Object.entries(run.sources || {}).map(([name, s]) => sourceLine(name, s));
       const items = (run.items || []).map(it => itemRow({
         status: it.status,
         deferred: it.deferred,
@@ -224,11 +246,16 @@
         el('ul', { class: 'agent-sources' }, sources),
         el('div', { class: 'modal-section-label', text: `Articles (${items.length})` }),
         items.length ? el('ul', { class: 'agent-items' }, items) : el('p', { class: 'agent-note', text: 'No new articles in this run.' }),
-        el('details', { class: 'agent-log-wrap' }, [el('summary', { text: 'Step-by-step log' }), el('pre', { class: 'agent-log', text: (run.log || []).join('\n') })]),
+        el('details', { class: 'agent-log-wrap' }, [el('summary', { text: 'Step-by-step log' }), el('pre', { class: 'agent-log' }, logLines(run.log || []))]),
       );
     } catch (e) {
-      body.replaceChildren(el('p', { class: 'agent-error', text: `Could not load this run: ${e.message}` }));
+      if (openRunId === id) body.replaceChildren(el('p', { class: 'agent-error', text: `Could not load this run: ${e.message}` }));
     }
+  }
+
+  /** The open run was running and the status poll says it is no longer the current run: show its final state. */
+  function openRunFinished(s) {
+    return Boolean(openRunId && openRunRunning && !$('agent-run-detail').hidden && s.currentRun?.id !== openRunId);
   }
 
   function stopPolling() {
@@ -242,6 +269,7 @@
     pollTimer = setInterval(async () => {
       if (Date.now() > pollUntil) { stopPolling(); return; }
       const s = await refresh();
+      if (s && openRunFinished(s)) await openRun(openRunId, { quiet: true });
       if (s && !s.running) {
         stopPolling();
         const run = (s.lastRuns || []).find(r => r.id === watchingRunId) || (watchingRunId ? s.lastRuns?.[0] : null);
@@ -285,6 +313,8 @@
   function closeAgent() {
     const modal = $('agent-modal');
     if (modal) modal.hidden = true;
+    openRunId = null;
+    openRunRunning = false;
     // Keep polling only while a run started here is still going, so its toast still appears.
     if (!watchingRunId) stopPolling();
   }
@@ -380,5 +410,5 @@
     wire();
   }
 
-  window.BATAgent = { init, sourceKind, sourceBadgeHtml, isXPostUrl, isXHost, importX, statusLabel, parseLines };
+  window.BATAgent = { init, sourceKind, sourceBadgeHtml, isXPostUrl, isXHost, importX, statusLabel, parseLines, openRun };
 })();

@@ -95,11 +95,18 @@ export function fetched(text, { status = 200, url, contentType = 'text/html; cha
  * Fake fetchUrl for the agent: GDELT, Google News RSS, Google article links
  * (which stay on Google, like the real ones) and publisher pages.
  */
-export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, fail = [], hold = null } = {}) {
+export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, fail = [], hold = null, gdeltLimited = [] } = {}) {
+  let gdeltCalls = 0;
   return vi.fn(async (url, opts = {}) => {
     if (hold) await hold;
     if (fail.some(f => url.includes(f))) throw new Error('connect ECONNREFUSED');
-    if (url.startsWith('https://api.gdeltproject.org/')) return fetched(JSON.stringify(gdelt), { url, contentType: 'application/json' });
+    if (url.startsWith('https://api.gdeltproject.org/')) {
+      // gdeltLimited: per call, 429 = HTTP 429, 'text' = GDELT's plain-text "please limit requests" reply.
+      const limited = gdeltLimited[gdeltCalls++];
+      if (limited === 429) return fetched('', { status: 429, url, bodySkipped: true });
+      if (limited === 'text') return fetched('Please limit requests to one every 5 seconds or contact kalev.leetaru5@gmail.com for larger queries.', { url, contentType: 'text/html' });
+      return fetched(JSON.stringify(gdelt), { url, contentType: 'application/json' });
+    }
     if (url.startsWith('https://news.google.com/rss/search')) return fetched(typeof rss === 'function' ? rss(url) : rss, { url, contentType: 'application/rss+xml' });
     if (url.startsWith('https://news.google.com/rss/articles/')) {
       // Real Google News article links answer 200 on news.google.com; the caller must not read them.

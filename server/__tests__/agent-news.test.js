@@ -5,7 +5,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { createNewsAgent, parseTriage, TRIAGE_BATCH } from '../agent/news-agent.mjs';
+import { createNewsAgent, parseTriage, agentModels, TRIAGE_BATCH, DEFAULT_AGENT_MODELS } from '../agent/news-agent.mjs';
+import { chatReply, jsonResponse } from './fixtures/ai-fixtures.js';
 import { createImportPipeline, istDate } from '../agent/pipeline.mjs';
 import {
   parseGoogleNewsRss, parseGdelt, googleNewsUrl, gdeltUrl, normalizeUrl, urlKey, linkVariants,
@@ -22,12 +23,12 @@ afterEach(() => { delete process.env.OPENROUTER_API_KEY; vi.useRealTimers(); vi.
 
 const fullBudget = () => ({ limit: 45, used: 0, remaining: 45 });
 
-function makeAgent({ env = {}, store = makeStore(), fetchUrl = makeFeedFetch(), aiFetch = makeAi(), dataDir = tmpDir(), budgetStatus = fullBudget, geocode = async () => ({ lat: 12.9177, lng: 77.6233 }) } = {}) {
+function makeAgent({ env = {}, store = makeStore(), fetchUrl = makeFeedFetch(), aiFetch = makeAi(), dataDir = tmpDir(), budgetStatus = fullBudget, geocode = async () => ({ lat: 12.9177, lng: 77.6233 }), sleep = async () => {} } = {}) {
   const pipeline = createImportPipeline({ store, geocode, inferZone: () => 'South', sleep: async () => {}, logger: silentLogger });
   const agent = createNewsAgent({
     pipeline, store, dataDir, fetchUrl, aiFetch, budgetStatus,
     env: { OPENROUTER_API_KEY: 'test-key', AGENT_QUERIES: 'Bengaluru accident|ಬೆಂಗಳೂರು ಅಪಘಾತ', ...env },
-    logger: silentLogger, sleep: async () => {},
+    logger: silentLogger, sleep,
   });
   return { agent, store, fetchUrl, aiFetch, dataDir };
 }
@@ -307,6 +308,119 @@ describe('News Agent run', () => {
     expect(noKey.status()).toMatchObject({ ready: false, notReadyReason: 'OPENROUTER_API_KEY is not set' });
     const noDb = makeAgent({ store: { ...makeStore(), available: () => false } }).agent;
     expect(noDb.status().notReadyReason).toBe('no database configured');
+  });
+});
+
+describe('News Agent AI calls', () => {
+  const oneHeadline = () => makeFeedFetch({ gdelt: { articles: [] }, rss: googleRss([GOOGLE_ITEMS[0]]) });
+  const emptyThinkingReply = () => jsonResponse({
+    model: 'nvidia/nemotron',
+    choices: [{ finish_reason: 'length', message: { content: '' } }],
+    usage: { prompt_tokens: 900, completion_tokens: 4000, completion_tokens_details: { reasoning_tokens: 3990 } },
+  });
+  const isTriage = (body) => body.messages[body.messages.length - 1].content.includes('<<<HEADLINES');
+
+  it('uses the agent model order, 4000 tokens and reasoning control for triage, and gets past an empty reply', async () => {
+    const bodies = [];
+    let triageCalls = 0;
+    const aiFetch = vi.fn(async (_u, init) => {
+      const body = JSON.parse(init.body);
+      bodies.push(body);
+      if (isTriage(body)) return ++triageCalls === 1 ? emptyThinkingReply() : chatReply({ keep: [{ i: 1, reason: 'crash on Hosur Road' }] });
+      return chatReply(extraction());
+    });
+    const { agent, store } = makeAgent({ fetchUrl: oneHeadline(), aiFetch });
+    const run = await runOnce(agent);
+    const triage = bodies.filter(isTriage);
+    expect(triage.map(b => b.model)).toEqual(DEFAULT_AGENT_MODELS.slice(0, 2));
+    expect(triage.every(b => b.max_tokens === 4000)).toBe(true);
+    expect(triage[0].reasoning).toEqual({ effort: 'low', exclude: true });
+    const extract = bodies.filter(b => !isTriage(b));
+    expect(extract).toHaveLength(1);
+    expect(extract[0]).toMatchObject({ model: 'google/gemma-4-31b-it:free', max_tokens: 2500 });
+    expect(run.counts.imported).toBe(1);
+    expect(store.inserted).toHaveLength(1);
+    expect(run.aiCalls).toBe(3);
+  });
+
+  it('triage may use 3 attempts, one per model, when every model replies with nothing', async () => {
+    const bodies = [];
+    const aiFetch = vi.fn(async (_u, init) => { bodies.push(JSON.parse(init.body)); return emptyThinkingReply(); });
+    const { agent } = makeAgent({ fetchUrl: oneHeadline(), aiFetch });
+    const run = await runOnce(agent);
+    expect(bodies.map(b => b.model)).toEqual(DEFAULT_AGENT_MODELS);
+    expect(run.log.some(l => /finish_reason=length, completion_tokens=4000, reasoning_tokens=3990/.test(l))).toBe(true);
+    expect(run.items[0]).toMatchObject({ status: 'error', deferred: true, reason: expect.stringMatching(/will retry next run \(1 of 3\)/) });
+  });
+
+  it('reads AGENT_MODELS and never lets a paid model through', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(agentModels({})).toEqual(['google/gemma-4-31b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'openrouter/free']);
+    expect(agentModels({ AGENT_MODELS: ' a/b:free , openai/gpt-5, a/b:free ' })).toEqual(['a/b:free', 'openrouter/free']);
+  });
+
+  it('a headline whose triage fails 3 runs in a row is finished as an error', async () => {
+    const aiFetch = vi.fn(async () => chatReply('this is not JSON'));
+    const dataDir = tmpDir();
+    const { agent } = makeAgent({ fetchUrl: oneHeadline(), aiFetch, dataDir });
+    const key = urlKey(GOOGLE_ITEMS[0].link);
+
+    const r1 = await runOnce(agent);
+    expect(r1.items[0]).toMatchObject({ status: 'error', deferred: true, reason: expect.stringMatching(/\(1 of 3\)/) });
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-state.json'), 'utf8')).triageFails[key].n).toBe(1);
+    const r2 = await runOnce(agent);
+    expect(r2.items[0].reason).toMatch(/\(2 of 3\)/);
+    const r3 = await runOnce(agent);
+    expect(r3.items[0]).toEqual(expect.objectContaining({ status: 'error', step: 'triage', reason: 'AI could not judge this headline (triage failed 3 runs in a row)' }));
+    expect(r3.items[0].deferred).toBeUndefined();
+    expect(r3.counts.error).toBe(1);
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-seen.json'), 'utf8'))).toContain(key);
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-state.json'), 'utf8')).triageFails[key]).toBeUndefined();
+    const calls = aiFetch.mock.calls.length;
+    const r4 = await runOnce(agent);
+    expect(aiFetch.mock.calls.length).toBe(calls);
+    expect(r4.counts.alreadySeen).toBe(1);
+  });
+
+  it('waiting for budget does not count as a failed triage', async () => {
+    const { agent } = makeAgent({ fetchUrl: oneHeadline(), budgetStatus: () => ({ limit: 45, used: 40, remaining: 5 }) });
+    for (let i = 0; i < 4; i++) {
+      const run = await runOnce(agent);
+      expect(run.items[0]).toMatchObject({ deferred: true, reason: expect.stringMatching(/waiting for AI budget/) });
+    }
+  });
+});
+
+describe('GDELT rate limit', () => {
+  it('waits 6 seconds, retries once, then skips GDELT without failing the run', async () => {
+    const sleep = vi.fn(async () => {});
+    const fetchUrl = makeFeedFetch({ gdeltLimited: [429, 429] });
+    const { agent, store } = makeAgent({ fetchUrl, sleep });
+    const run = await runOnce(agent);
+    expect(fetchUrl.mock.calls.filter(([u]) => u.startsWith('https://api.gdeltproject.org/'))).toHaveLength(2);
+    expect(sleep).toHaveBeenCalledWith(6000);
+    expect(run.sources.GDELT).toEqual({ ok: false, skipped: true, count: 0, error: 'rate-limited' });
+    expect(run.log.some(l => l.endsWith('SEARCH GDELT: rate-limited, skipped'))).toBe(true);
+    expect(run.log.some(l => /GDELT: failed/.test(l))).toBe(false);
+    expect(run.status).toBe('completed');
+    expect(store.inserted).toHaveLength(2); // the Google News crashes still came through
+    expect(agent.status().lastRuns[0].sources.GDELT).toEqual({ ok: false, count: 0, skipped: true });
+  });
+
+  it('uses the retry when the first request is rate-limited', async () => {
+    const fetchUrl = makeFeedFetch({ gdeltLimited: ['text'] });
+    const { agent } = makeAgent({ fetchUrl });
+    const run = await runOnce(agent);
+    expect(run.sources.GDELT).toEqual({ ok: true, count: 2 });
+    expect(fetchUrl.mock.calls.filter(([u]) => u.startsWith('https://api.gdeltproject.org/'))).toHaveLength(2);
+  });
+
+  it('makes one GDELT request per run when it is not rate-limited', async () => {
+    const sleep = vi.fn(async () => {});
+    const fetchUrl = makeFeedFetch();
+    await runOnce(makeAgent({ fetchUrl, sleep }).agent);
+    expect(fetchUrl.mock.calls.filter(([u]) => u.startsWith('https://api.gdeltproject.org/'))).toHaveLength(1);
+    expect(sleep).not.toHaveBeenCalledWith(6000);
   });
 });
 

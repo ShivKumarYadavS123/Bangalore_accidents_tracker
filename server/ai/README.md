@@ -31,6 +31,7 @@ The BAT News Agent and Import from X (`server/agent/`) use the same free budget:
 OPENROUTER_API_KEY=...            # already used by the project
 OPENROUTER_AGENT_MODELS=a:free,b:free   # override the free model chain
 AI_DAILY_LLM_BUDGET=45            # stop calling the LLM after this many calls/day
+AI_REASONING_EFFORT=low           # OpenRouter reasoning effort for "thinking" models (off = don't send)
 AI_DISABLE_LLM=true               # force offline mode
 AI_DISABLE_LOCAL_MODELS=true      # skip MiniLM + image detector (uses TF-IDF fallback)
 AI_PREWARM=false                  # don't download/load local models at startup

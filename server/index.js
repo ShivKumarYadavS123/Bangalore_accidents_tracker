@@ -16,6 +16,7 @@ import { assessScenePhoto, processScenePhoto } from './emergency/vision.mjs';
 import { createAiFeatures } from './ai/index.mjs';
 import { ensureFreeModel } from './ai/llm.mjs';
 import { createNewsFeatures } from './agent/index.mjs';
+import { createStatsStore, registerAdminStatsRoute } from './admin-stats.js';
 import { resolveSupabaseConfig, parseTrustProxy } from './config.js';
 import { readActiveAccidents, appendPublicAccident } from './accident-json.js';
 
@@ -1631,6 +1632,8 @@ function syncDeleteToJson(id) {
 ai.registerRoutes(app, { validateJwt, adminAuth });
 emergency.registerRoutes(app);
 news.registerRoutes(app, { adminAuth, readLimiter: limiterPublic, writeLimiter: limiterAdminSlug });
+// Admin stat cards: database-wide counts (count-only queries, no rows downloaded).
+registerAdminStatsRoute(app, { adminAuth, readLimiter: limiterPublic, statsStore: createStatsStore({ supabase, q: pool ? q : null }) });
 
 app.listen(PORT, () => {
   console.log(`BAT API listening on http://localhost:${PORT}`);
