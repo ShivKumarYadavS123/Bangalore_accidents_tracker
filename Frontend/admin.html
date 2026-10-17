@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css">
   <script src="https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js"></script>
   <link rel="stylesheet" href="css/main.css?v=2">
-  <link rel="stylesheet" href="css/admin.css?v=7">
+  <link rel="stylesheet" href="css/admin.css?v=8">
   <link rel="stylesheet" href="css/ai.css">
   <link rel="icon" type="image/png" href="logo-mark.png">
 </head>
@@ -192,6 +192,7 @@
       <div id="review-photo-wrap"></div>
       <div id="review-info"></div>
       <div id="review-integrity"></div>
+      <div id="review-agent-verdict" class="review-agent-verdict"></div>
 
       <div class="modal-section-label" id="review-desc-label">Description (from reporter)</div>
       <p id="review-description" class="review-description"></p>
@@ -340,6 +341,23 @@
       </div>
       <p class="agent-note agent-run-hint" id="agent-run-hint" hidden></p>
 
+      <section class="review-agent" aria-labelledby="review-agent-title">
+        <div class="modal-section-label" id="review-agent-title">Review Agent</div>
+        <p class="agent-note">Double-checks the News Agent's finds after every run. It approves only finds it is sure about (two publishers, a pin, a recent date, no duplicate, the AI sure) and <strong>never rejects</strong>: anything unsure stays Pending for you.</p>
+        <div class="review-modes" role="group" aria-label="Review Agent mode">
+          <button type="button" class="review-mode" id="review-mode-off" aria-pressed="false">Off</button>
+          <button type="button" class="review-mode" id="review-mode-shadow" aria-pressed="false">Shadow</button>
+          <button type="button" class="review-mode" id="review-mode-auto" aria-pressed="false">Auto</button>
+        </div>
+        <p class="agent-note" id="review-mode-hint"></p>
+        <div id="review-agent-status" class="agent-status">Loading…</div>
+        <div class="agent-actions">
+          <button type="button" class="btn-cancel" id="review-run-btn" disabled>Review now</button>
+        </div>
+        <div class="modal-section-label">Latest decisions</div>
+        <ul id="review-decisions" class="agent-items" aria-live="polite"></ul>
+      </section>
+
       <div id="agent-runs-view">
         <div class="modal-section-label">Recent runs</div>
         <ul id="agent-runs" class="agent-runs"></ul>
@@ -443,8 +461,8 @@
 <script type="module" src="js/supabase-auth.js"></script>
 <script src="js/ai-common.js"></script>
 <script src="js/admin-integrity.js"></script>
-<script src="js/admin-agent.js?v=2"></script>
-<script src="js/admin-app.js?v=7"></script>
+<script src="js/admin-agent.js?v=3"></script>
+<script src="js/admin-app.js?v=8"></script>
 <script src="js/nav-active.js"></script>
 </body>
 </html>

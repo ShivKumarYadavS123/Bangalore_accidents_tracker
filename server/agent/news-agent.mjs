@@ -218,6 +218,47 @@ export function parseTriage(j, n) {
   return keep;
 }
 
+// ── Reading an article ───────────────────────────────────────────────────────
+
+/**
+ * Resolve and read an article. Google News links are requested once to see
+ * whether they redirect to a publisher; a Google page is never read or parsed
+ * (title + snippet are used instead and the Google link is kept).
+ * A publisher page gives the body (JSON-LD articleBody when the page has one,
+ * so menus can't push the story out of what the AI reads), og:title, the
+ * description, the publish time and, unless the item is itself a related
+ * link or maxRelated is 0, the page's related-story links.
+ * `note` is set whenever only the headline could be used.
+ * Shared by the News Agent and the Review Agent (which re-reads publisher pages).
+ */
+export async function readArticle(item, { fetchUrl = fetchCapped, maxRelated = 0 } = {}) {
+  const headline = (note, link = item.url, meta = {}) => ({
+    link, text: [item.title, item.snippet].filter(Boolean).join('\n'), siteName: null, note,
+    pageTitle: meta.title || null, description: meta.description || null, publishedAt: meta.publishedAt || null, related: [],
+  });
+  let r;
+  try {
+    r = await fetchUrl(item.url, { maxBytes: 2 * 1024 * 1024, timeoutMs: 15000, accept: 'text/html,application/xhtml+xml', skipBodyIf: isGoogleHost });
+  } catch (e) {
+    if (/prohibited|Unsupported protocol|Invalid URL|private address|local domain/i.test(e.message)) return { invalid: true, reason: `link rejected (${short(e)})` };
+    return headline(`article could not be fetched (${short(e)}), used the headline`);
+  }
+  const finalUrl = normalizeUrl(r.url) || item.url;
+  if (isGoogleHost(finalUrl)) return headline('Google News link did not lead to the publisher, used the headline');
+  if (!r.ok) return headline(`publisher returned HTTP ${r.status}, used the headline`, finalUrl);
+  if (!/html/i.test(r.contentType || '')) return headline('not an HTML page, used the headline', finalUrl);
+  const meta = pageMeta(r.text);
+  const ld = jsonLdArticle(r.text);
+  if (ld && !meta.publishedAt) meta.publishedAt = ld.publishedAt;
+  const text = ld ? ld.body : htmlToText(r.text);
+  if (text.length < 200) return headline('article text too short, used the headline', finalUrl, meta);
+  return {
+    link: finalUrl, text, siteName: meta.siteName, note: null,
+    pageTitle: meta.title, description: meta.description, publishedAt: meta.publishedAt,
+    related: maxRelated > 0 && item.source !== 'related' ? relatedLinks(r.text, finalUrl) : [],
+  };
+}
+
 // ── Files (best effort) ──────────────────────────────────────────────────────
 
 function readJson(file, fallback) {
@@ -230,6 +271,7 @@ export function createNewsAgent({
   pipeline, store, env = process.env, dataDir,
   fetchUrl = fetchCapped, chat = chatJSON, aiFetch = null, budgetStatus = llmBudgetStatus,
   logger = console, sleep = defaultSleep, now = () => Date.now(),
+  onRunDone = null, // (run) => Promise: the Review Agent, started after each finished run
 } = {}) {
   const cfg = agentConfig(env);
   const files = {
@@ -660,43 +702,6 @@ export function createNewsAgent({
   }
 
   /**
-   * Resolve and read an article. Google News links are requested once to see
-   * whether they redirect to a publisher; a Google page is never read or parsed
-   * (title + snippet are used instead and the Google link is kept).
-   * A publisher page gives the body (JSON-LD articleBody when the page has one,
-   * so menus can't push the story out of what the AI reads), og:title, the
-   * description, the publish time and, unless the item is itself a related
-   * link, the page's related-story links.
-   */
-  async function readArticle(item) {
-    const headline = (note, link = item.url, meta = {}) => ({
-      link, text: [item.title, item.snippet].filter(Boolean).join('\n'), siteName: null, note,
-      pageTitle: meta.title || null, description: meta.description || null, publishedAt: meta.publishedAt || null, related: [],
-    });
-    let r;
-    try {
-      r = await fetchUrl(item.url, { maxBytes: 2 * 1024 * 1024, timeoutMs: 15000, accept: 'text/html,application/xhtml+xml', skipBodyIf: isGoogleHost });
-    } catch (e) {
-      if (/prohibited|Unsupported protocol|Invalid URL|private address|local domain/i.test(e.message)) return { invalid: true, reason: `link rejected (${short(e)})` };
-      return headline(`article could not be fetched (${short(e)}), used the headline`);
-    }
-    const finalUrl = normalizeUrl(r.url) || item.url;
-    if (isGoogleHost(finalUrl)) return headline('Google News link did not lead to the publisher, used the headline');
-    if (!r.ok) return headline(`publisher returned HTTP ${r.status}, used the headline`, finalUrl);
-    if (!/html/i.test(r.contentType || '')) return headline('not an HTML page, used the headline', finalUrl);
-    const meta = pageMeta(r.text);
-    const ld = jsonLdArticle(r.text);
-    if (ld && !meta.publishedAt) meta.publishedAt = ld.publishedAt;
-    const text = ld ? ld.body : htmlToText(r.text);
-    if (text.length < 200) return headline('article text too short, used the headline', finalUrl, meta);
-    return {
-      link: finalUrl, text, siteName: meta.siteName, note: null,
-      pageTitle: meta.title, description: meta.description, publishedAt: meta.publishedAt,
-      related: cfg.maxRelated > 0 && item.source !== 'related' ? relatedLinks(r.text, finalUrl) : [],
-    };
-  }
-
-  /**
    * Related-story links worth following from a page that was read: the link
    * text reads like a crash and names Bengaluru or a place in it, and the link
    * is new (not seen, not stored, not in this run). At most
@@ -860,7 +865,7 @@ export function createNewsAgent({
           continue;
         }
         if (idx > 0) await sleep(cfg.requestDelayMs);
-        const page = await readArticle(twin ? { ...item, url: twin.url } : item);
+        const page = await readArticle(twin ? { ...item, url: twin.url } : item, { fetchUrl, maxRelated: cfg.maxRelated });
         if (page.invalid) { finish(run, item, 'read', 'invalid_link', page.reason); continue; }
         if (twin) log(run, `READ: "${String(item.title).slice(0, 80)}": read the publisher's link from ${twin.source === 'gdelt' ? 'GDELT' : 'its feed'} instead of Google News`);
         const publishedAt = item.publishedAt || page.publishedAt || null;
@@ -882,6 +887,8 @@ export function createNewsAgent({
           fallbackPublisher: publisherFromUrl(page.link),
           marker: AGENT_MARKER,
           titleStyle: 'severity',
+          // Only the headline was read: the row says so, and the Review Agent leaves it to a person.
+          ...(page.note ? { headlineOnly: true } : {}),
         };
         // The page's words go to the AI but are not kept with a queued save retry.
         const pageWords = { text: page.text, pageTitle: page.pageTitle, description: page.description };
@@ -930,7 +937,10 @@ export function createNewsAgent({
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  /** Starts a run unless one is running; returns at once. `done` resolves with the finished run. */
+  /**
+   * Starts a run unless one is running; returns at once. `done` resolves with
+   * the finished run, after `onRunDone` (the Review Agent) has had its turn.
+   */
   function runAgent({ backfillDays = 0, trigger } = {}) {
     if (!cfg.enabled) return { started: false, reason: 'disabled', message: 'News Agent is turned off (AGENT_ENABLED=false)' };
     if (running) return { started: false, reason: 'running', message: 'A run is already in progress', runId: current?.id || null };
@@ -943,7 +953,11 @@ export function createNewsAgent({
     running = execute(run)
       .catch(e => { logger.warn?.('[agent] run crashed:', short(e)); return run; })
       .finally(() => { running = null; current = null; });
-    return { started: true, runId: run.id, done: running };
+    const done = !onRunDone ? running : running.then(async (finished) => {
+      try { await onRunDone(finished); } catch (e) { logger.warn?.('[agent] Review Agent after the run failed:', short(e)); }
+      return finished;
+    });
+    return { started: true, runId: run.id, done };
   }
 
   function schedule(ms) {

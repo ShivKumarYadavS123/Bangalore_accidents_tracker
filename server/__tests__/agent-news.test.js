@@ -150,6 +150,9 @@ describe('News Agent run', () => {
     expect(googleCalls.length).toBeGreaterThan(0);
     for (const [u, opts] of googleCalls) expect(opts.skipBodyIf(u)).toBe(true);
     expect(run.items.find(i => i.url.includes('CBMiAAA111')).reason).toMatch(/used the headline/);
+    // The row says so (the Review Agent leaves headline-only finds to a person); a page that was read doesn't.
+    expect(dh.description).toContain('(read from the headline only) (Found by BAT News Agent)');
+    expect(hindu.description).not.toContain('(read from the headline only)');
 
     // Files: run log, seen list and the IST daily counter.
     const runsFile = JSON.parse(fs.readFileSync(path.join(dataDir, 'agent-runs.json'), 'utf8'));

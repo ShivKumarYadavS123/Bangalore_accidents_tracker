@@ -18,6 +18,7 @@ import { ensureFreeModel } from './ai/llm.mjs';
 import { createNewsFeatures } from './agent/index.mjs';
 import { createStatsStore, registerAdminStatsRoute } from './admin-stats.js';
 import { titleDateEdit } from './admin-accident-edit.js';
+import { setAccidentStatus } from './admin-accident-write.js';
 import { resolveSupabaseConfig, parseTrustProxy } from './config.js';
 import { readActiveAccidents, appendPublicAccident } from './accident-json.js';
 
@@ -183,6 +184,9 @@ const news = createNewsFeatures({
   geocode: geocodeLocation,
   inferZone,
   dataDir: path.join(__dirname, 'data'),
+  // BAT Review Agent: approves through the bulk route's queries, then refreshes the AI data cache.
+  setStatus: (ids, status, opts) => setAccidentStatus({ supabase, q: pool ? q : null }, ids, status, opts),
+  onDataChanged: () => ai.invalidate(),
 });
 app.use(news.invalidateOnWrite);
 
@@ -1304,23 +1308,12 @@ app.post('/api/admin/accidents/bulk', adminAuth, async (req, res) => {
       return res.json({ ok: true });
     }
 
-    if (action === 'verify') {
-      if (supabase) {
-        try { await supabase.from('accidents').update({ status: 'active', rejection_reason: null }).in('id', ids); } catch (e) { }
-      }
-      if (pool) {
-        await q(`UPDATE accidents SET status = 'active', rejection_reason = NULL WHERE id = ANY($1::text[])`, [ids]);
-      }
-      return res.json({ ok: true });
-    }
-
-    if (action === 'hide') {
-      if (supabase) {
-        try { await supabase.from('accidents').update({ status: 'hidden', rejection_reason: rejection_reason || null }).in('id', ids); } catch (e) { }
-      }
-      if (pool) {
-        await q(`UPDATE accidents SET status = 'hidden', rejection_reason = COALESCE($2, rejection_reason) WHERE id = ANY($1::text[])`, [ids, rejection_reason ?? null]);
-      }
+    if (action === 'verify' || action === 'hide') {
+      // Same queries the Review Agent uses for its approvals (admin-accident-write.js).
+      await setAccidentStatus({ supabase, q: pool ? q : null }, ids, action === 'verify' ? 'active' : 'hidden', { rejection_reason });
+      // Agreement score: the Review Agent compares this with its own decision. It only
+      // queues the work, and an error there can never fail the admin's request.
+      try { news.review.recordAdminDecision(ids, action === 'verify' ? 'approve' : 'reject'); } catch (e) { console.warn('Review Agent agreement update skipped:', e.message); }
       return res.json({ ok: true });
     }
 

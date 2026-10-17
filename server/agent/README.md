@@ -2,7 +2,7 @@
 
 We built BAT's first 1,187 accidents by reading about 4,000 news articles by hand. The News Agent does that reading for us on a schedule: it searches free news sources for fresh Bengaluru road accidents and adds what it finds as **pending** accidents. An admin approves or rejects each one. The **Import from X** paste box does the same for Bengaluru Traffic Police posts on X.
 
-Nothing the agent finds reaches the public map until an admin approves it.
+Nothing the agent finds reaches the public map until an admin approves it, or, in Auto mode only, until the **BAT Review Agent** approves it after its checks (see [BAT Review Agent](#bat-review-agent); it starts in Shadow mode, which changes nothing).
 
 ## What one run does
 
@@ -48,7 +48,7 @@ Nothing the agent finds reaches the public map until an admin approves it.
       - Title: "Fatal accident: Hosur Road near Silk Board junction"
       - Source: the publisher name
       - Link: the article
-      - Description: the summary followed by "(Found by BAT News Agent)"
+      - Description: the summary followed by "(Found by BAT News Agent)". When the article page couldn't be read and only the headline was used, "(read from the headline only)" comes before the marker.
 6. **Remember.** Every URL that got an outcome is added to the seen-list. Items held back by the AI budget, a rate limit or a temporary network error are not added, so a later run tries them again.
 7. **Failed saves.** A save that fails is not a verdict on the article. The item is shown as Deferred, is not added to the seen-list, and goes back in the queue with the record the AI already built (extracted fields and location). The next run retries only the save: no reading and no AI call.
    - The reason is "could not save (<error>); will retry next run".
@@ -64,6 +64,86 @@ Every item ends with one of: `imported`, `duplicate`, `not_accident`, `outside_b
 - **AI makes mistakes.** It misreads places, dates and severity, and some headlines are about old crashes, court cases or crashes outside the city. A person checks each one against the source before it counts.
 - **The public data stays trustworthy.** The dashboard, trends, risk model and Ask BAT only use approved (`active`) rows. Pending rows never go into the public `Frontend/accident_data.json`.
 - **Pins need a human.** Many news reports only name an area, so the admin may need to drag the pin to the right spot (Edit) before approving.
+
+## BAT Review Agent
+
+A second agent (`review-agent.mjs`) double-checks the News Agent's pending finds and, in Auto mode, approves the ones it is sure about. **It never rejects anything:** a find it is unsure about stays Pending for a person.
+
+### When it runs
+
+- Right after every News Agent run (scheduled, Run now or Backfill).
+- When an admin presses **Review now** (`POST /api/admin/agent/review`).
+
+It looks only at pending rows the agent-row check counts as News Agent finds: `reporter_id` null and "(Found by BAT News Agent)" in the description. This is the same check that tags agent rows on the map (`store.agentRows`).
+- A row it has already reviewed is skipped until the row changes (a hash of its fields).
+- A row that stopped at check c is checked again on each run while its date is within 7 days, because a new find may corroborate it. These checks are free, and a repeated result isn't logged again.
+
+### The checks
+
+Cheapest first; the first failure stops the review with a reason.
+
+| | Check | Needs a person when |
+|---|---|---|
+| a | Real data | No pin inside the Bengaluru box. Or the description has "(no exact place: set the pin before approving)", the Kannada note "(place from a Kannada article, not checked…)" or "(read from the headline only)". Or the link is a Google News link. Or the pin came from one of the Review Agent's own suggestions. |
+| b | Date | `accident_date` is missing, in the future, or more than 7 days ago. |
+| c | Corroboration | No other report on the same date within 500 m whose text says the same thing (similarity at least 0.75, local embeddings from `ai/integrity.mjs`, no AI call), from a **different publisher**. The publisher is compared by its name and by its link's site. The same publisher twice doesn't count. A corroborator is an active row, or a pending News Agent or X find that passes check a itself. Pending citizen reports don't count. The matching rows form one cluster. If the cluster includes an active row, the accident is already on the map, so a person decides. |
+| d | Not a duplicate | An **active** row within 300 m on the same date (`find_duplicates_by_point` through the store, like the Finder). |
+| e | AI check | One AI call through the News Agent's AI gate and model order (`AGENT_MODELS`), at most 2 attempts. The agent reads both publishers' pages again and asks: *"Given these two reports, is this one specific road accident in Bengaluru, and do the record's location and date match?"* The reply must be exactly `{ same_accident, is_road_accident, location_ok, date_ok, confidence 0-1, note }` with the right types. Anything else counts as a malformed reply. |
+
+The decision is **auto_approve** only when a to d pass and the AI answers true to all four questions with confidence of at least 0.8. Everything else is **needs_human**, with the reason shown in the admin panel and the Review modal.
+
+### Modes (`REVIEW_AGENT_MODE`, default `shadow`)
+
+- **off:** nothing runs.
+- **shadow:** decisions are recorded in `server/data/review-*.json` and nothing else happens. **Zero database writes**, and a test proves it.
+- **auto:** an auto_approve sets the cluster's best row to `active`, using the same queries as the admin's Approve button (`server/admin-accident-write.js`).
+  - The best row is the one with a time of day, then the longer report, then the older id.
+  - " (Approved by BAT Review Agent)" is added to that row's description.
+  - The other rows in the cluster are hidden with the rejection reason "merged into #id".
+  - The map tags and the AI data cache are refreshed, as after an admin write.
+
+An admin changes the mode in **Admin → News Agent → Review Agent**. Switching to Auto asks for confirmation first, and the API also requires `confirm: true`. The choice is kept in `server/data/review-state.json` (not the Finder's `agent-state.json`) and wins over the env value.
+
+**Undo** (in the table, on rows marked "Agent-approved") puts the approved row back to Pending with its old description, and the rows it hid go back to Pending too. The Review Agent never auto-approves that accident again.
+
+### Why it never rejects
+
+A rejected find disappears from the queue, so a mistake there is silent: nobody looks at it again. A wrong approval is visible: it is badged "Agent-approved" on the admin table, it can be undone in one click, and it shows on the map where people notice it. So the agent only takes the action a person can easily check and undo, and everything else stays in the human queue, as it did before the agent existed.
+
+### Why headline-only finds always need a person
+
+When the article page couldn't be read (a Google News link that never reaches the publisher, an error page, too little text), the Finder only had the headline and a snippet. The place, date and severity are then the AI's reading of about 15 words, which is too little to approve without a person. The Finder now marks these rows "(read from the headline only)". Rows saved before that note existed are still caught when their link is a Google News link. A headline-only find can't corroborate another find either.
+
+### Fix suggestions
+
+For a pending find with no pin, or with "(exact place not in the article)", the agent may read the **publisher's** page again (never a Google page) and propose a title, location, area, accident date and pin. The proposal uses one AI call from the same daily budget, after the checks above.
+- It is offered only when:
+  - the place words appear in the article's title, description or text (`groundPlace` / `isPlaceGrounded` from `pipeline.mjs`);
+  - the date is within 7 days and not in the future;
+  - **the geocoder** puts the place inside the Bengaluru box.
+- The AI never supplies coordinates, and any it sends are ignored.
+- Kannada articles and finds older than 7 days get no suggestion.
+
+Suggestions are **never applied automatically**, in any mode. They show in the Review modal of that find with an **Apply suggestions** button, which sends the same `PATCH /api/admin/accidents/:id` as Edit. A find whose pin came from a suggestion is never auto-approved: a person approves it.
+
+### AI budget
+
+`REVIEW_AGENT_DAILY_AI_BUDGET` calls per IST day (default 10, every attempt counts, kept in `review-state.json`). The Finder's rule still applies: no AI step while fewer than 10 site-wide free calls are left.
+- Over budget, the remaining rows wait for the next run (waiting is not a decision).
+- A busy model's 429 moves on to the next model.
+- An account-level 429 stops the run.
+- If the News Agent run just before ended on a 429, the review makes no AI call that time.
+
+### Reading the agreement score
+
+The panel shows "agreed with admins on N of M". When an admin approves or rejects (Approve, Reject, or the bulk buttons) a row the Review Agent judged itself, the agent compares that with its own decision.
+- **auto_approve and the admin approved:** agree.
+- **auto_approve and the admin rejected:** disagree.
+- **needs_human:** not counted, because "a person should look" is never wrong. These are shown separately in `GET /api/admin/agent/review/stats` as `needsHuman: { approve, reject }`.
+- Only the first admin decision on a row counts. An Undo isn't counted, but the approve or reject that follows it is.
+- Approvals made with the status pill (the PATCH route) are not reported.
+
+Run it in **shadow** until M is a few dozen and N/M is close to 1. Every disagreement is a find the agent would have published wrongly: read its reason in the Review modal before switching to Auto.
 
 ## Sources and their terms
 
@@ -107,6 +187,8 @@ Free OpenRouter models allow about 50 calls a day, shared by the whole site (Ask
 | `AGENT_MODELS` | `google/gemma-4-31b-it:free,nvidia/nemotron-3-super-120b-a12b:free,openrouter/free` | Free models for triage, extraction and Import from X, in order. Paid ids are replaced with `openrouter/free`. |
 | `AI_REASONING_EFFORT` | `low` | Reasoning effort sent to OpenRouter with every AI request (all features). `minimal`, `medium`, `high`, `none`, or `off` to send nothing. |
 | `X_TRAFFIC_POLICE_HANDLES` | `blrcitytraffic` | X handles (comma-separated) labelled "Bengaluru Traffic Police (X)". Other handles are labelled "X: @handle". |
+| `REVIEW_AGENT_MODE` | `shadow` | Review Agent mode: `off`, `shadow` (record only, no database writes) or `auto`. The admin's choice in the panel wins over this. |
+| `REVIEW_AGENT_DAILY_AI_BUDGET` | `10` | AI calls per IST day for the Review Agent (checks and fix suggestions). |
 
 The agent also needs `OPENROUTER_API_KEY` and a database (Supabase or `DATABASE_URL`). Without them it does not run, and the admin panel says why.
 
@@ -139,6 +221,8 @@ Set `AGENT_ENABLED=false` in `server/.env` and restart the server. Nothing is sc
 | `server/data/agent-seen.json` | Last 5,000 processed URLs | Yes |
 | `server/data/agent-state.json` | Today's AI call count, the read queue (including saves waiting to be retried), related links waiting for the next run, recent headlines | Yes |
 | `server/data/agent-runs.json` | Last 50 run logs (titles, URLs, steps, reasons; no secrets) | Yes |
+| `server/data/review-state.json` | Review Agent: the mode an admin chose, today's AI call count, reviewed-row hashes, approvals (for Undo), undone rows, admin verdicts (agreement score), fix suggestions, the last 20 review runs | Yes, but the mode goes back to `REVIEW_AGENT_MODE`, the agreement score restarts, and Undo then only resets the approved row itself |
+| `server/data/review-runs.json` | Review Agent: the last 500 decisions (row id, each check passed or failed, the AI verdict, the decision, the mode, the time), undos and suggestions | Yes |
 
 These files are git-ignored and best-effort: some hosts wipe them on every deploy. That is fine because the database link match is the real dedupe, so a wiped seen-list costs some extra AI calls but never creates duplicate rows. The daily AI count also resets with the file, which the site-wide budget in `llm.mjs` still caps.
 
@@ -148,6 +232,9 @@ These files are git-ignored and best-effort: some hosts wipe them on every deplo
   - Shows on/off, the next run, and AI calls used today out of the budget.
   - **Run now** starts a run; **Backfill last 30 days** asks for confirmation and searches 30 days under the same budgets.
   - The list shows recent runs. Click a run to see every article with a coloured status and the reason.
+  - **Review Agent** section: the mode (Off / Shadow / Auto; Auto asks first), AI calls today, "agreed with admins on N of M", **Review now**, and the latest decisions with their reasons.
+- **Table:** rows the Review Agent approved get an **Agent-approved** badge and an **Undo** button (asks first, back to Pending).
+- **Review modal** of a News Agent find: the Review Agent's verdict, each check, the AI's note, and any fix suggestion with **Apply suggestions**.
 - **Admin → Import from X:** paste up to 20 Traffic Police post links, one per line, and get one result row per link. X links pasted into "+ Add Article" are sent here too.
 - **Edit** (any record): besides the pin, location and area, an admin can fix the **Title** (5 to 200 characters) and the **Accident date** (YYYY-MM-DD, not in the future, IST). No Supabase Table Editor is needed.
   - Changing the date also sets `date_raw` to that date, keeping its time when it had one ("2026-10-12 23:30" becomes "2026-10-11 23:30").
@@ -165,10 +252,17 @@ These files are git-ignored and best-effort: some hosts wipe them on every deplo
 | GET | `/api/admin/agent/runs/:id` | Full log of one run |
 | POST | `/api/admin/agent/run` | `{ "backfillDays": 1-30 }` optional. 202 when started, 409 when a run is going or the agent is off |
 | POST | `/api/admin/x-import` | `{ "urls": [...] }`, at most 20. One result per link, in order |
+| POST | `/api/admin/agent/review` | Start a review. 202 when started, 409 when the Review Agent is off or already running |
+| GET | `/api/admin/agent/review/status` | Mode, AI calls today, agreement, last runs, latest 20 decisions |
+| GET | `/api/admin/agent/review/stats` | `{ agree, disagree, scored, decisions: { auto_approve, needs_human }, needsHuman: { approve, reject }, undos }` |
+| GET | `/api/admin/agent/review/rows/:id` | The verdict, checks, AI note and fix suggestion for one row (Review modal) |
+| POST | `/api/admin/agent/review/mode` | `{ "mode": "off" \| "shadow" \| "auto" }`; `auto` also needs `"confirm": true` |
+| POST | `/api/admin/agent/review/undo/:id` | Undo a Review Agent approval: back to Pending (409 if the agent didn't approve it) |
 
 ## Tests
 
 ```
-npm --prefix server test -- agent      # pipeline, agent, reading, X import, routes (feeds, pages, X, DB and AI all mocked)
+npm --prefix server test -- agent      # pipeline, agent, reading, X import, Review Agent, routes (feeds, pages, X, DB and AI all mocked)
 npm --prefix server test -- admin-accident-edit   # Edit: title and accident date
+npm --prefix Frontend test -- review-agent-ui      # Review Agent panel, badge, Undo, verdict, Apply; Edit save refreshes the row
 ```

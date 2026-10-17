@@ -436,6 +436,9 @@
       // Where the row came from: citizen report, News Agent or an X post.
       const kind = window.BATAgent?.sourceKind(r) || (r.reporter_id ? 'user' : null);
       const sourceBadge = window.BATAgent?.sourceBadgeHtml(r) || '';
+      // Approved by the BAT Review Agent: a badge, and Undo (back to Pending).
+      const reviewBadge = window.BATAgent?.reviewBadgeHtml(r) || '';
+      const reviewUndo = window.BATAgent?.reviewUndoHtml(r) || '';
 
       // A compact snapshot of this row's fields for the Review modal / buttons.
       const reviewData = jsonAttr({
@@ -467,7 +470,7 @@
         ${checkboxCell}
         <td class="cell-id">${esc(r.id)}</td>
         <td class="cell-title">${titleHtml}</td>
-        <td class="cell-source">${esc(r.source || '—')}${sourceBadge}</td>
+        <td class="cell-source">${esc(r.source || '—')}${sourceBadge}${reviewBadge}</td>
         <td class="cell-date">${esc(r.date || '—')}</td>
         <td class="cell-loc">${esc(r.location || r.area || '—')}${proofLink}</td>
         <td><span class="sev-badge ${sevClass}">${sevLabel}</span></td>
@@ -483,6 +486,7 @@
             <button class="btn-edit" data-action="edit" data-id="${esc(r.id)}" data-row='${jsonAttr({id:r.id,title:r.title,date:r.date||'',link:r.link||'',lat:r.lat||'',lng:r.lng||'',location:r.location||'',area:r.area||''})}'> Edit</button>
             <button class="btn-del"  data-action="delete" data-id="${esc(r.id)}" data-title="${esc(r.title)}"> Delete</button>
             ${pendingBtns}
+            ${reviewUndo}
           </div>
         </td>
       </tr>`;
@@ -520,6 +524,10 @@
     // Review a user submission (photo + full details) before approving/rejecting
     tbody.querySelectorAll('[data-action="review"]').forEach(el => {
       el.addEventListener('click', () => openReview(JSON.parse(el.dataset.row)));
+    });
+    // Undo a Review Agent approval (asks first; the table reloads through BATAgent's onChange)
+    tbody.querySelectorAll('[data-action="review-undo"]').forEach(btn => {
+      btn.addEventListener('click', () => window.BATAgent?.undoReview(btn.dataset.id));
     });
     // Row selection handlers
     tbody.querySelectorAll('.row-select').forEach(cb => { cb.addEventListener('change', () => {}); });
@@ -1094,16 +1102,17 @@
       });
       if (r.status === 401) return; // Handled by authenticatedFetch
       if (!r.ok) throw new Error((await r.json()).error);
+      const savedId = editingId; // closeEdit() clears editingId
       closeEdit();
       if (extra.title || extra.accident_date) {
         // Title and date show in several places (row, Review data, pins): reload the page of rows.
         loadData(curPage);
         return;
       }
-      updateRowInTable(editingId, lat, lng, location, area);
-      const mr = allMapRows.find(m => String(m.id) === String(editingId));
+      updateRowInTable(savedId, lat, lng, location, area);
+      const mr = allMapRows.find(m => String(m.id) === String(savedId));
       if (mr) { mr.lat = lat; mr.lng = lng; mr.location = location; mr.area = area; }
-      const marker = adminPins.get(editingId);
+      const marker = adminPins.get(savedId);
       if (marker) {
         marker.setLngLat([lng, lat]);
         if (marker.getPopup() && mr) {
@@ -1530,6 +1539,12 @@
     const integrityBox = document.getElementById('review-integrity');
     if (isUser) window.BATIntegrity?.renderPanel(integrityBox, row.id);
     else integrityBox.innerHTML = '';
+    // News Agent finds: the BAT Review Agent's verdict and any fix suggestion ("Apply suggestions" uses the Edit PATCH).
+    const verdictBox = document.getElementById('review-agent-verdict');
+    if (verdictBox) {
+      if (kind === 'agent' && window.BATAgent?.renderReviewVerdict) window.BATAgent.renderReviewVerdict(verdictBox, row, { onApplied: () => { closeReview(); loadData(curPage); } });
+      else verdictBox.innerHTML = '';
+    }
     document.getElementById('review-reject-reason').value = '';
     document.getElementById('review-error').hidden = true;
 

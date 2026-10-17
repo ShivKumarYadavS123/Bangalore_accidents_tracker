@@ -1,9 +1,13 @@
 /**
- * Admin: BAT News Agent panel and the "Import from X" paste box.
+ * Admin: BAT News Agent panel (with its Review Agent section) and the "Import from X" paste box.
  * Hooks used by admin-app.js:
  *   BATAgent.init({ fetch, api, toast, onChange })   wire the buttons and modals
  *   BATAgent.sourceKind(row)       'x' | 'agent' | 'user' | null
  *   BATAgent.sourceBadgeHtml(row)  "Agent" / "X" badge markup (fixed strings only)
+ *   BATAgent.reviewBadgeHtml(row)  "Agent-approved" badge for rows the Review Agent approved
+ *   BATAgent.reviewUndoHtml(row)   their "Undo" button (data-action="review-undo")
+ *   BATAgent.undoReview(id)        asks, then POST /api/admin/agent/review/undo/:id
+ *   BATAgent.renderReviewVerdict(box, row, { onApplied })  the Review modal's verdict and fix suggestion
  *   BATAgent.isXPostUrl(url), BATAgent.isXHost(url)
  *   BATAgent.importX(urls)         POST /api/admin/x-import → one result per link
  * Headlines, reasons and links come from outside sources, so they are always
@@ -13,6 +17,16 @@
   'use strict';
 
   const AGENT_MARKER = '(Found by BAT News Agent)';
+  const APPROVED_MARKER = '(Approved by BAT Review Agent)';
+  const REVIEW_MODES = ['off', 'shadow', 'auto'];
+  const MODE_LABEL = { off: 'Off', shadow: 'Shadow', auto: 'Auto' };
+  const MODE_HINT = {
+    off: 'Off: the Review Agent does not run.',
+    shadow: 'Shadow: it records what it would do and changes nothing. Compare its verdicts with yours before trusting Auto.',
+    auto: 'Auto: it approves finds only when every check passes, and never rejects. Undo any approval from the table.',
+  };
+  const DECISION_LABEL = { auto_approve: 'Auto-approve', needs_human: 'Needs a person' };
+  const CHECK_LABEL = { real_data: 'Real data', date: 'Date', corroboration: 'Second publisher', cluster: 'Already on the map', duplicate: 'Not a duplicate', ai: 'AI check' };
   const X_POST = /^https:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/\d{1,20}\/?(?:\?[^#\s]*)?$/i;
   const MAX_X_LINKS = 20;
   const POLL_MS = 5000;
@@ -39,6 +53,9 @@
   let openRunId = null; // run shown in the detail view
   let openRunRunning = false; // whether that run was still running when last fetched
   let wired = false;
+  let lastReview = null; // last Review Agent status
+  let reviewPoll = null;
+  let verdictRowId = null; // row shown in the Review modal's verdict box
 
   // ── Pure helpers (also used by admin-app.js and the tests) ─────────────────
 
@@ -63,6 +80,25 @@
     if (kind === 'agent') return '<span class="src-badge src-badge--agent" title="Found by the BAT News Agent">Agent</span>';
     if (kind === 'x') return '<span class="src-badge src-badge--x" title="Imported from a post on X">X</span>';
     return '';
+  }
+
+  /** Approved by the Review Agent and still public: gets the badge and the Undo button. */
+  function isAgentApproved(row) {
+    return Boolean(row) && row.status === 'active' && String(row.description || '').includes(APPROVED_MARKER);
+  }
+
+  function escAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function reviewBadgeHtml(row) {
+    return isAgentApproved(row) ? '<span class="src-badge src-badge--approved" title="Approved automatically by the BAT Review Agent">Agent-approved</span>' : '';
+  }
+
+  function reviewUndoHtml(row) {
+    return isAgentApproved(row)
+      ? `<button type="button" class="btn-undo" data-action="review-undo" data-id="${escAttr(row.id)}" title="Set this record back to Pending">Undo</button>`
+      : '';
   }
 
   function statusLabel(status) { return STATUS_LABEL[status] || status; }
@@ -278,6 +314,7 @@
           if (run.counts?.imported) onChange();
         }
         watchingRunId = null;
+        refreshReview(); // the Review Agent looked at the new finds right after the run
       }
     }, POLL_MS);
   }
@@ -308,6 +345,7 @@
     showRunList();
     modal.hidden = false;
     refresh().then(s => { if (s?.running && !pollTimer) startPolling(); });
+    refreshReview();
   }
 
   function closeAgent() {
@@ -317,6 +355,201 @@
     openRunRunning = false;
     // Keep polling only while a run started here is still going, so its toast still appears.
     if (!watchingRunId) stopPolling();
+  }
+
+  // ── Review Agent (section in the News Agent panel) ────────────────────────
+
+  function decisionPill(d) {
+    if (d.kind === 'undo') return el('span', { class: 'st-pill st-review-undo', text: 'Undone' });
+    if (d.kind === 'suggestion') return el('span', { class: 'st-pill st-review-suggest', text: 'Suggestion' });
+    return el('span', { class: `st-pill st-review-${d.decision === 'auto_approve' ? 'auto' : 'human'}`, text: DECISION_LABEL[d.decision] || d.decision || '' });
+  }
+
+  function decisionDetail(d) {
+    return [
+      d.reason,
+      d.applied && d.approved ? `approved #${d.approved}${d.hidden?.length ? `, merged ${d.hidden.length} report${d.hidden.length === 1 ? '' : 's'} into it` : ''}` : null,
+      d.kind !== 'undo' && d.decision === 'auto_approve' && !d.applied && d.mode === 'shadow' ? 'shadow mode: nothing changed' : null,
+      d.hasSuggestion ? 'fix suggested (see Review)' : null,
+      fmtTime(d.at),
+    ].filter(Boolean).join(' · ');
+  }
+
+  function renderReview(s) {
+    lastReview = s;
+    REVIEW_MODES.forEach(m => {
+      const b = $(`review-mode-${m}`);
+      if (!b) return;
+      b.setAttribute('aria-pressed', String(s.mode === m));
+      b.className = `review-mode${s.mode === m ? ' is-active' : ''}`;
+    });
+    const hint = $('review-mode-hint');
+    if (hint) hint.textContent = MODE_HINT[s.mode] || '';
+    const runBtn = $('review-run-btn');
+    if (runBtn) runBtn.disabled = s.mode === 'off' || Boolean(s.running);
+    const box = $('review-agent-status');
+    if (box) {
+      const a = s.agreement || { agree: 0, scored: 0 };
+      const rows = [
+        ['Mode', `${MODE_LABEL[s.mode] || s.mode}${s.modeSetBy === 'admin' ? ' (set here)' : ' (from REVIEW_AGENT_MODE)'}${s.running ? ' · reviewing now' : ''}`],
+        ['AI calls today', `${s.aiCallsToday} of ${s.dailyAiBudget}`],
+        ['Agreement', `agreed with admins on ${a.agree} of ${a.scored}`],
+        ['Last review', fmtTime(s.lastRunAt)],
+      ];
+      box.replaceChildren(el('dl', { class: 'agent-status-grid' }, rows.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])));
+    }
+    const list = $('review-decisions');
+    if (list) {
+      const latest = (s.latest || []).slice(0, 10);
+      list.replaceChildren(...(latest.length
+        ? latest.map(d => el('li', { class: 'agent-item' }, [
+          decisionPill(d),
+          el('div', { class: 'agent-item-body' }, [
+            el('div', { class: 'agent-item-title', text: `#${d.rowId} ${d.title || ''}` }),
+            el('div', { class: 'agent-item-reason', text: decisionDetail(d) }),
+          ]),
+        ]))
+        : [el('li', { class: 'agent-empty', text: 'No decisions yet. The Review Agent looks at new finds after each News Agent run, or press Review now.' })]));
+    }
+  }
+
+  async function refreshReview() {
+    try {
+      const s = await getJson(`${API}/api/admin/agent/review/status`);
+      renderReview(s);
+      return s;
+    } catch (e) {
+      const box = $('review-agent-status');
+      if (box) box.replaceChildren(el('p', { class: 'agent-error', text: `Could not load the Review Agent status: ${e.message}` }));
+      return null;
+    }
+  }
+
+  /** Changing the mode; Auto changes the database by itself, so it asks first. */
+  async function setReviewMode(mode) {
+    if (!REVIEW_MODES.includes(mode) || mode === lastReview?.mode) return false;
+    if (mode === 'auto') {
+      const ok = window.confirm('Switch the Review Agent to Auto?\n\nIn Auto it approves pending News Agent finds by itself, but only when every check passes: a second publisher, a pin, a recent date, no duplicate, and the AI sure. It never rejects anything, and you can Undo any approval from the table.');
+      if (!ok) return false;
+    }
+    try {
+      const s = await getJson(`${API}/api/admin/agent/review/mode`, { method: 'POST', body: JSON.stringify(mode === 'auto' ? { mode, confirm: true } : { mode }) });
+      renderReview(s);
+      toast(`Review Agent mode: ${MODE_LABEL[mode]}`, 'success');
+      return true;
+    } catch (e) {
+      toast(`Could not change the mode: ${e.message}`, 'error', 5000);
+      return false;
+    }
+  }
+
+  function pollReview(until = Date.now() + 3 * 60 * 1000) {
+    clearTimeout(reviewPoll);
+    reviewPoll = setTimeout(async () => {
+      const s = await refreshReview();
+      if (s?.running && Date.now() < until) { pollReview(until); return; }
+      const last = s?.lastRuns?.[0];
+      if (last) {
+        const c = last.counts || {};
+        toast(`Review finished: ${c.auto_approve || 0} auto-approve, ${c.needs_human || 0} need a person${c.approved ? `, ${c.approved} approved` : ''}`, last.status === 'failed' ? 'error' : 'success', 6000);
+        if (c.approved) onChange();
+      }
+    }, 3000);
+  }
+
+  async function runReviewNow() {
+    const btn = $('review-run-btn');
+    if (btn) btn.disabled = true;
+    try {
+      await getJson(`${API}/api/admin/agent/review`, { method: 'POST', body: '{}' });
+      toast('Review started', 'success');
+      await refreshReview();
+      pollReview();
+    } catch (e) {
+      toast(`Could not start the review: ${e.message}`, 'error', 5000);
+      await refreshReview();
+    }
+  }
+
+  async function undoReview(id) {
+    const ok = window.confirm(`Undo the Review Agent's approval of #${id}?\n\nThe record goes back to Pending, any reports it merged into it come back too, and the Review Agent won't approve this accident again.`);
+    if (!ok) return false;
+    try {
+      const r = await getJson(`${API}/api/admin/agent/review/undo/${encodeURIComponent(id)}`, { method: 'POST', body: '{}' });
+      const n = r.restored?.length || 0;
+      toast(`#${r.id} is Pending again${n ? ` (and ${n} merged report${n === 1 ? '' : 's'})` : ''}`, 'success');
+      onChange();
+      if (lastReview) refreshReview();
+      return true;
+    } catch (e) {
+      toast(`Undo failed: ${e.message}`, 'error', 5000);
+      return false;
+    }
+  }
+
+  /** "Apply suggestions": the Edit modal's PATCH, so the server checks it the same way. */
+  async function applySuggestion(row, s, btn, onApplied) {
+    const body = { lat: s.lat, lng: s.lng, location: s.location };
+    if (s.area) body.area = s.area;
+    if (s.title && s.title !== row.title) body.title = s.title;
+    if (s.accident_date && s.accident_date !== String(row.date || '').slice(0, 10)) body.accident_date = s.accident_date;
+    btn.disabled = true;
+    try {
+      await getJson(`${API}/api/admin/accidents/${encodeURIComponent(row.id)}`, { method: 'PATCH', body: JSON.stringify(body) });
+      toast('Suggestion applied. Check the pin and the article, then approve.', 'success', 5000);
+      if (typeof onApplied === 'function') onApplied(); else onChange();
+      return true;
+    } catch (e) {
+      toast(`Could not apply the suggestion: ${e.message}`, 'error', 5000);
+      btn.disabled = false;
+      return false;
+    }
+  }
+
+  /** The Review modal of a News Agent find: the Review Agent's verdict, its checks and any fix suggestion. */
+  async function renderReviewVerdict(box, row, { onApplied } = {}) {
+    if (!box) return;
+    verdictRowId = row ? String(row.id) : null;
+    if (!row || sourceKind(row) !== 'agent') { box.replaceChildren(); return; }
+    box.replaceChildren(el('p', { class: 'agent-note', text: "Loading the Review Agent's verdict…" }));
+    let info;
+    try {
+      info = await getJson(`${API}/api/admin/agent/review/rows/${encodeURIComponent(row.id)}`);
+    } catch (e) {
+      if (verdictRowId === String(row.id)) box.replaceChildren(el('p', { class: 'agent-error', text: `Could not load the Review Agent's verdict: ${e.message}` }));
+      return;
+    }
+    if (verdictRowId !== String(row.id)) return; // the admin opened another record meanwhile
+    const kids = [el('div', { class: 'modal-section-label', text: 'Review Agent' })];
+    const d = info.decision;
+    if (!d) {
+      kids.push(el('p', { class: 'agent-note', text: info.mode === 'off' ? 'The Review Agent is off.' : 'Not reviewed yet. The Review Agent looks at new finds after each News Agent run.' }));
+    } else {
+      kids.push(el('div', { class: 'review-verdict' }, [decisionPill(d), el('span', { class: 'review-verdict-reason', text: d.reason || '' })]));
+      if (info.checks?.length) {
+        kids.push(el('ul', { class: 'review-checks' }, info.checks.map(c => el('li', {
+          class: c.ok ? 'ok' : 'fail',
+          text: `${c.ok ? '✓' : '✕'} ${CHECK_LABEL[c.check] || c.check}${c.reason ? `: ${c.reason}` : c.note ? `: ${c.note}` : ''}`,
+        }))));
+      }
+      if (info.ai) kids.push(el('p', { class: 'agent-note', text: `AI check (confidence ${info.ai.confidence}): ${info.ai.note || 'no note'}` }));
+    }
+    if (info.approved) kids.push(el('p', { class: 'agent-note', text: 'Approved by the Review Agent. Use Undo in the table to send it back to Pending.' }));
+    if (info.undone) kids.push(el('p', { class: 'agent-note', text: "An admin undid an approval of this accident: the Review Agent won't approve it again." }));
+    const s = info.suggestion;
+    if (s) {
+      const btn = el('button', { type: 'button', class: 'btn-save review-apply', text: 'Apply suggestions' });
+      btn.addEventListener('click', () => applySuggestion(row, s, btn, onApplied));
+      const fields = [['Title', s.title], ['Location', s.location], ['Area', s.area || '—'], ['Accident date', s.accident_date], ['Pin', `${Number(s.lat).toFixed(5)}, ${Number(s.lng).toFixed(5)}`]];
+      kids.push(el('div', { class: 'review-suggestion' }, [
+        el('div', { class: 'review-suggestion-title', text: 'Suggested fix: the place is named in the article, the pin comes from the map search' }),
+        el('dl', { class: 'agent-status-grid' }, fields.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+        btn,
+      ]));
+    } else if (info.suggestionReason) {
+      kids.push(el('p', { class: 'agent-note', text: `No fix suggestion: ${info.suggestionReason}` }));
+    }
+    box.replaceChildren(...kids);
   }
 
   // ── Import from X ─────────────────────────────────────────────────────────
@@ -387,6 +620,8 @@
     $('agent-run-btn')?.addEventListener('click', () => startRun(0));
     $('agent-backfill-btn')?.addEventListener('click', () => startRun(30));
     $('agent-modal')?.addEventListener('click', e => { if (e.target === e.currentTarget) closeAgent(); });
+    REVIEW_MODES.forEach(m => $(`review-mode-${m}`)?.addEventListener('click', () => setReviewMode(m)));
+    $('review-run-btn')?.addEventListener('click', runReviewNow);
 
     $('x-import-btn')?.addEventListener('click', openX);
     $('x-import-close')?.addEventListener('click', closeX);
@@ -410,5 +645,8 @@
     wire();
   }
 
-  window.BATAgent = { init, sourceKind, sourceBadgeHtml, isXPostUrl, isXHost, importX, statusLabel, parseLines, openRun };
+  window.BATAgent = {
+    init, sourceKind, sourceBadgeHtml, isXPostUrl, isXHost, importX, statusLabel, parseLines, openRun,
+    isAgentApproved, reviewBadgeHtml, reviewUndoHtml, undoReview, renderReviewVerdict, refreshReview, setReviewMode,
+  };
 })();

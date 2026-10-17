@@ -32,6 +32,8 @@ export const NO_PLACE_LOCATION = 'Bengaluru (exact place not in the article)';
 export const NO_PLACE_NOTE = '(no exact place: set the pin before approving)';
 /** A Kannada article's place can't be matched against the text (the AI writes it in English), so it is never pinned. */
 export const KANNADA_PLACE_NOTE = '(place from a Kannada article, not checked: check it and set the pin before approving)';
+/** The article page couldn't be read (a Google News link that stayed on Google, an error, too little text): only the headline was. */
+export const HEADLINE_ONLY_NOTE = '(read from the headline only)';
 
 /**
  * The live accidents table still has the old status check that only allows
@@ -361,12 +363,18 @@ export function pickPublisher(candidates) {
   return 'News report';
 }
 
+/** "Fatal accident: Hosur Road near Silk Board junction" (news rows; the Review Agent's suggestions too). */
+export function severityTitle(severity, location) {
+  return `${SEVERITY_WORD[severity] || 'Minor'} accident: ${location}`;
+}
+
 /**
  * Row for accidents. `item.sourceName` is fixed for X posts; news items pick
  * the feed's publisher, then the AI's, then the domain. Without an exact place
  * the row is saved with the area (or "Bengaluru (exact place not in the
  * article)") as its location and no pin, and the description asks the admin
- * to set the pin.
+ * to set the pin. `item.headlineOnly` (the page couldn't be read) adds a note
+ * so the Review Agent and the admin can see it.
  */
 export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateAssumed = false, placeUnchecked = false, inferZone = () => 'Other' } = {}) {
   const severity = data.severity;
@@ -374,7 +382,7 @@ export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateA
   const location = data.location || data.area || NO_PLACE_LOCATION;
   const titleText = item.titleStyle === 'traffic-police'
     ? `Traffic Police: ${location}`
-    : `${SEVERITY_WORD[severity]} accident: ${location}`;
+    : severityTitle(severity, location);
   const source = item.sourceName || pickPublisher([item.publisher, data.publisher, item.fallbackPublisher]);
   const date = data.date;
   const description = [
@@ -383,6 +391,7 @@ export function buildRecord(item, data, loc, { possibleDuplicateOf = null, dateA
     dateAssumed ? `(Date taken from the ${item.kind === 'x' ? 'post' : 'article'}'s publish date.)` : null,
     exactPlace ? null : NO_PLACE_NOTE,
     exactPlace && placeUnchecked ? KANNADA_PLACE_NOTE : null,
+    item.headlineOnly ? HEADLINE_ONLY_NOTE : null,
     item.marker || AGENT_MARKER,
   ].filter(Boolean).join(' ').slice(0, 1000);
   return {
@@ -527,5 +536,10 @@ export function createImportPipeline({ store, geocode = null, inferZone = () => 
     }
   }
 
-  return { importItem, saveExtracted, withLock };
+  /** Geocode a place through the same 1-per-1.1 s throttle (Review Agent suggestions); null pin outside the box. */
+  function locatePlace(data) {
+    return locate(data, { geocode: geocode ? throttledGeocode : null });
+  }
+
+  return { importItem, saveExtracted, withLock, locatePlace };
 }

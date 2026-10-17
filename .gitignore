@@ -18,3 +18,7 @@ server/.cache/
 # News Agent working files (seen URLs, daily AI count, run logs); safe to delete
 server/data/agent-*.json
 server/data/agent-*.json.*.tmp
+
+# BAT Review Agent working files (mode, daily AI count, decisions); safe to delete
+server/data/review-*.json
+server/data/review-*.json.*.tmp
