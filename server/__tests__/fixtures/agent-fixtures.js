@@ -86,6 +86,64 @@ export const CRASH_ARTICLE = articleHtml([
   'The Electronic City traffic police have registered a case and are checking CCTV footage from the stretch.',
 ]);
 
+export const FEED_URLS = {
+  hindu: 'https://www.thehindu.com/news/cities/bangalore/feeder/default.rss',
+  toi: 'https://timesofindia.indiatimes.com/rssfeeds/-2128833038.cms',
+};
+
+/** A publisher's own RSS 2.0 feed, shaped like The Hindu's (CDATA, HTML in the description). */
+export function publisherRss(items, { site = 'https://www.thehindu.com' } = {}) {
+  const xml = items.map(it => `
+    <item>
+      <title><![CDATA[${it.title}]]></title>
+      <link>${it.link}</link>
+      <description><![CDATA[<p>${it.description || ''}</p>]]></description>
+      <pubDate>${it.pubDate || day(2)}</pubDate>
+      <guid isPermaLink="true">${it.link}</guid>
+    </item>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Bengaluru</title><link>${site}/</link><atom:link href="${site}/feed" rel="self"/>${xml}</channel></rss>`;
+}
+
+/**
+ * Story #1228 (Deccan Herald): the body never names the place. Only the meta
+ * description ("Silk Board accident: ...") and the last line ("Madiwala
+ * Traffic Police registered a case") do. The keywords are about other stories.
+ */
+export const SILK_BOARD_URL = 'https://www.deccanherald.com/india/karnataka/bengaluru/delhi-youth-dies-as-bike-hits-flyover-wall-3712345';
+export const SILK_BOARD_ARTICLE = `<!doctype html><html><head>
+  <title>Delhi youth dies as bike hits flyover wall | Deccan Herald</title>
+  <meta property="og:site_name" content="Deccan Herald">
+  <meta content="Delhi youth dies as bike hits flyover wall" property="og:title">
+  <meta name="description" content="Silk Board accident: A Delhi youth's bike hit the flyover wall late on Saturday &amp; he died on the spot.">
+  <meta name="keywords" content="KR Puram bridge, Hebbal flyover, Mysuru Road crash">
+  <meta property="article:published_time" content="${new Date(Date.now() - 5 * 3600 * 1000).toISOString()}">
+  </head><body>
+  <nav><a href="/">Home</a> <a href="/india/karnataka/bengaluru">Bengaluru</a></nav>
+  <article><h1>Delhi youth dies as bike hits flyover wall</h1>
+  <p>A 23-year-old man from Delhi who worked at a tech park died after the motorcycle he was riding hit the side wall of a flyover late on Saturday night, police said.</p>
+  <p>He was returning home from work when he lost control of the bike on the flyover and crashed into the wall. He died on the spot before an ambulance could reach him.</p>
+  <p>Also Read: <a href="/india/karnataka/bengaluru/truck-overturns-on-tumakuru-road-driver-injured-3712300">Truck overturns on Tumakuru Road, driver injured</a></p>
+  <p>Madiwala Traffic Police registered a case and are checking footage from the flyover.</p>
+  </article>
+  <div class="related-stories"><h3>More from Bengaluru</h3><ul>
+    <li><a href="/india/karnataka/bengaluru/techie-killed-as-lorry-hits-scooter-in-hebbal-3712400">Techie killed as lorry hits scooter in Hebbal</a></li>
+    <li><a href="/india/karnataka/bengaluru/bbmp-announces-new-parking-policy-3712401">Bengaluru: BBMP announces new parking policy for the city</a></li>
+    <li><a href="/india/maharashtra/two-die-in-crash-on-mumbai-pune-expressway-3712402">Two die in crash on Mumbai-Pune expressway</a></li>
+    <li><a href="https://www.othersite.com/bengaluru-bus-crash-injures-five">Bengaluru bus crash injures five commuters</a></li>
+    <li><a href="/india/karnataka/bengaluru/biker-dies-after-skidding-on-outer-ring-road-3712403">Biker dies after skidding on Bengaluru's Outer Ring Road</a></li>
+    <li><a href="/india/karnataka/bengaluru/pedestrian-killed-in-yelahanka-hit-and-run-3712404">Pedestrian killed in Yelahanka hit-and-run</a></li>
+    <li><a href="javascript:void(0)">Car rams divider near Silk Board junction</a></li>
+  </ul></div>
+  <footer>Copyright</footer></body></html>`;
+
+/** A page whose menus come first; its JSON-LD carries the story itself. */
+export function jsonLdPage(body, { menuItems = 400, extra = {} } = {}) {
+  const menu = Array.from({ length: menuItems }, (_, i) => `<p>Trending now: celebrity wedding photos and cricket scores, part ${i}</p>`).join('');
+  const ld = { '@context': 'https://schema.org', '@graph': [{ '@type': 'WebPage', name: 'x' }, { '@type': ['NewsArticle'], headline: 'h', articleBody: body, datePublished: new Date().toISOString(), ...extra }] };
+  return `<!doctype html><html><head><meta property="og:site_name" content="The Times of India">
+  <script type="application/ld+json">${JSON.stringify(ld)}</script></head><body><div class="menu">${menu}</div><article><p>${body}</p></article></body></html>`;
+}
+
 /** Response shape returned by fetchCapped. */
 export function fetched(text, { status = 200, url, contentType = 'text/html; charset=utf-8', bodySkipped = false } = {}) {
   return { ok: status >= 200 && status < 300, status, url, contentType, text: bodySkipped ? '' : text, bodySkipped };
@@ -95,7 +153,7 @@ export function fetched(text, { status = 200, url, contentType = 'text/html; cha
  * Fake fetchUrl for the agent: GDELT, Google News RSS, Google article links
  * (which stay on Google, like the real ones) and publisher pages.
  */
-export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, fail = [], hold = null, gdeltLimited = [], rssStatuses = {} } = {}) {
+export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles = { [GDELT_URLS.crash.replace('?utm_source=gdelt', '')]: CRASH_ARTICLE }, feeds = {}, fail = [], hold = null, gdeltLimited = [], rssStatuses = {} } = {}) {
   let gdeltCalls = 0;
   // rssStatuses: { 'url part': [404, 503, ...] } answers the next matching Google News requests with those statuses.
   const rssQueue = Object.fromEntries(Object.entries(rssStatuses).map(([k, v]) => [k, [...v]]));
@@ -119,6 +177,15 @@ export function makeFeedFetch({ gdelt = GDELT_JSON, rss = GOOGLE_RSS, articles =
       // Real Google News article links answer 200 on news.google.com; the caller must not read them.
       const skipped = typeof opts.skipBodyIf === 'function' && opts.skipBodyIf(url);
       return fetched('<html>GOOGLE PAGE</html>', { url, bodySkipped: skipped });
+    }
+    // feeds: { url: xml | [status, ...then xml] } — publisher RSS feeds.
+    if (feeds[url] !== undefined) {
+      const f = feeds[url];
+      if (Array.isArray(f) && typeof f[0] === 'number') {
+        const status = f.shift();
+        return fetched('', { status, url, bodySkipped: true });
+      }
+      return fetched(Array.isArray(f) ? f[0] : f, { url, contentType: 'application/rss+xml; charset=utf-8' });
     }
     if (articles[url]) return fetched(articles[url], { url });
     return fetched('', { status: 404, url, bodySkipped: true });

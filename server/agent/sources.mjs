@@ -3,6 +3,7 @@
  *
  *  - Google News RSS search feeds: headline, Google News link, publisher, date.
  *  - GDELT DOC 2.0 API (artlist mode): publisher URL, title, domain, first-seen time.
+ *  - Publisher RSS/Atom feeds (AGENT_RSS_FEEDS): headline, publisher link, date, summary.
  *
  * Every request goes through safeFetch (SSRF checks on every redirect hop) with
  * a timeout, and the body is read with a byte cap enforced while it streams in.
@@ -30,6 +31,14 @@ export function parseQueries(raw) {
 
 export const isKannada = (s) => KANNADA.test(String(s ?? ''));
 
+/** At least 30% of the letters are Kannada: a Kannada article, not an English one quoting a word. */
+export function mostlyKannada(s) {
+  const str = String(s ?? '');
+  const kn = (str.match(/[ಀ-೿]/g) || []).length;
+  const latin = (str.match(/[a-z]/gi) || []).length;
+  return kn > 0 && kn / (kn + latin) >= 0.3;
+}
+
 /**
  * Google News RSS search feed. `edition` is 'kn' (Kannada) or 'en' (English
  * India); by default Kannada queries use the Kannada edition.
@@ -39,6 +48,31 @@ export function googleNewsUrl(query, days = 2, edition = isKannada(query) ? 'kn'
   return edition === 'kn'
     ? `https://news.google.com/rss/search?q=${q}&hl=kn&gl=IN&ceid=IN:kn`
     : `https://news.google.com/rss/search?q=${q}&hl=en-IN&gl=IN&ceid=IN:en`;
+}
+
+/**
+ * Bengaluru city sections of publishers whose RSS feeds link straight to their
+ * articles (checked in a browser, October 2026).
+ */
+export const DEFAULT_FEEDS = [
+  'https://www.thehindu.com/news/cities/bangalore/feeder/default.rss',
+  'https://timesofindia.indiatimes.com/rssfeeds/-2128833038.cms',
+];
+
+/**
+ * AGENT_RSS_FEEDS is '|'-separated; empty or missing means the defaults, "off"
+ * or "none" means no publisher feeds. Only http(s) addresses that are not
+ * Google are kept, at most 10.
+ */
+export function parseFeedList(raw) {
+  const s = String(raw ?? '').trim();
+  if (/^(off|none|false)$/i.test(s)) return [];
+  const out = new Map();
+  for (const part of s.split('|')) {
+    const url = normalizeUrl(part.trim());
+    if (url && !isGoogleHost(url) && !out.has(urlKey(url))) out.set(urlKey(url), url);
+  }
+  return out.size ? [...out.values()].slice(0, 10) : DEFAULT_FEEDS.slice();
 }
 
 export const GDELT_QUERY = '(accident OR crash OR collision) (Bengaluru OR Bangalore) sourcecountry:india';
@@ -89,12 +123,83 @@ export function htmlToText(html, maxChars = 15000) {
   return (joined.length > 300 ? joined : plainText(scope)).slice(0, maxChars);
 }
 
-/** <meta property|name="..." content="..."> in either attribute order. */
-export function metaContent(html, prop) {
-  const p = prop.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const a = String(html ?? '').match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]*content=["']([^"']{1,200})["']`, 'i'));
-  const b = a || String(html ?? '').match(new RegExp(`<meta[^>]+content=["']([^"']{1,200})["'][^>]*(?:property|name)=["']${p}["']`, 'i'));
-  return b ? decodeEntities(b[1]).trim() : null;
+// One tag, with quoted attribute values that may contain ">".
+const META_TAG = /<meta\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+const ANCHOR = /<a\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/a\s*>/gi;
+
+/** Attributes of one tag: names lower-cased, first value wins, values not yet decoded. */
+function tagAttrs(tagText) {
+  const out = {};
+  const re = /([^\s=/<>"']+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
+  let m;
+  while ((m = re.exec(tagText))) {
+    const name = m[1].toLowerCase();
+    if (!(name in out)) out[name] = m[2] ?? m[3] ?? m[4] ?? '';
+  }
+  return out;
+}
+
+/**
+ * <meta property|name="..." content="..."> in any attribute order and quote
+ * style (so "youth's" in a double-quoted value is kept), entities decoded,
+ * whitespace collapsed, at most maxChars. null when missing or empty.
+ */
+export function metaContent(html, prop, maxChars = 300) {
+  const want = String(prop).toLowerCase();
+  for (const t of String(html ?? '').match(META_TAG) || []) {
+    const a = tagAttrs(t);
+    if (String(a.property ?? a.name ?? '').toLowerCase() !== want) continue;
+    const v = decodeEntities(a.content ?? '').replace(/\s+/g, ' ').trim();
+    if (v) return v.slice(0, maxChars);
+  }
+  return null;
+}
+
+/**
+ * What the page says about itself: site name, og:title and the description
+ * (og:description, else meta description). Meta keywords are never read:
+ * they are SEO tags, often about other stories.
+ */
+export function pageMeta(html) {
+  return {
+    siteName: metaContent(html, 'og:site_name', 80),
+    title: metaContent(html, 'og:title', 300) || metaContent(html, 'twitter:title', 300),
+    description: metaContent(html, 'og:description', 500) || metaContent(html, 'description', 500) || metaContent(html, 'twitter:description', 500),
+    publishedAt: isoOrNull(metaContent(html, 'article:published_time', 40)),
+  };
+}
+
+const ARTICLE_TYPE = /^(?:\w*NewsArticle|Article)$/;
+
+function findArticle(node, depth) {
+  if (!node || typeof node !== 'object' || depth > 4) return null;
+  if (Array.isArray(node)) {
+    for (const n of node.slice(0, 50)) { const f = findArticle(n, depth + 1); if (f) return f; }
+    return null;
+  }
+  const types = [].concat(node['@type'] ?? []).map(String);
+  if (types.some(t => ARTICLE_TYPE.test(t)) && typeof node.articleBody === 'string') return node;
+  return findArticle(node['@graph'], depth + 1) || findArticle(node.mainEntity, depth + 1);
+}
+
+/**
+ * The story from the page's JSON-LD (application/ld+json) when it is a
+ * NewsArticle / Article with an articleBody: { body, publishedAt } or null.
+ * This is the article without menus or "trending" lists, so the part the AI
+ * reads (the first 6,000 characters) is the story itself.
+ */
+export function jsonLdArticle(html, maxChars = 15000) {
+  const scripts = String(html ?? '').match(/<script\b[^>]*application\/ld\+json[^>]*>[\s\S]*?<\/script\s*>/gi) || [];
+  for (const s of scripts.slice(0, 20)) {
+    const raw = s.replace(/^<script\b[^>]*>/i, '').replace(/<\/script\s*>$/i, '');
+    let data;
+    // Raw newlines inside JSON strings are invalid but common; spaces are safe anywhere.
+    try { data = JSON.parse(raw.replace(/[\u0000-\u001F]+/g, ' ')); } catch { continue; }
+    const a = findArticle(data, 0);
+    const body = a ? plainText(a.articleBody) : '';
+    if (body.length >= 200) return { body: body.slice(0, maxChars), publishedAt: isoOrNull(a.datePublished) };
+  }
+  return null;
 }
 
 /** Tokens for near-identical headline detection (English and Kannada letters kept). */
@@ -186,6 +291,35 @@ export function parseGdelt(body) {
   })).filter(i => i.title && /^https?:\/\//i.test(i.url));
 }
 
+/**
+ * Items from a publisher's own RSS 2.0 or Atom feed. Only links on the feed's
+ * own site are kept, so every item points straight at the publisher.
+ */
+export function parsePublisherRss(xml, feedUrl) {
+  const publisher = publisherFromUrl(feedUrl);
+  const out = [];
+  const blocks = String(xml ?? '').match(/<(item|entry)\b[\s\S]*?<\/\1>/gi) || [];
+  for (const b of blocks.slice(0, 200)) {
+    const title = plainText(tag(b, 'title').text);
+    const atomHref = (b.match(/<link\b[^>]*\bhref\s*=\s*["']([^"']+)["']/i) || [])[1];
+    const link = decodeEntities(tag(b, 'link').text.trim() || atomHref || '').trim();
+    if (!title || !/^https?:\/\//i.test(link) || !sameSite(link, feedUrl)) continue;
+    const date = tag(b, 'pubDate').text || tag(b, 'dc:date').text || tag(b, 'published').text || tag(b, 'updated').text;
+    const snippet = plainText(decodeEntities(tag(b, 'description').text || tag(b, 'summary').text)).replace(/\s+/g, ' ').trim();
+    out.push({
+      source: 'publisher-feed',
+      title: title.slice(0, 300),
+      url: link,
+      publisher,
+      publisherUrl: originOf(feedUrl),
+      domain: siteOf(link) || null,
+      publishedAt: isoOrNull(date.trim()),
+      snippet: snippet.length >= 20 ? snippet.slice(0, 300) : '',
+    });
+  }
+  return out;
+}
+
 // ── URLs ─────────────────────────────────────────────────────────────────────
 
 const TRACKING_PARAMS = /^(utm_[a-z_]+|fbclid|gclid|dclid|msclkid|mc_cid|mc_eid|ocid|cmpid|ref_src|igshid|_ga)$/i;
@@ -233,6 +367,21 @@ export function hostOf(raw) {
   try { return new URL(String(raw ?? '')).hostname.toLowerCase(); } catch { return ''; }
 }
 
+function originOf(raw) {
+  try { return new URL(String(raw ?? '')).origin; } catch { return null; }
+}
+
+/** The publisher's site: the host without "www.", "m." or "amp.". */
+export function siteOf(raw) {
+  return hostOf(raw).replace(/^(www|m|amp)\./, '');
+}
+
+/** Same publisher site: equal hosts, or one a subdomain of the other. */
+export function sameSite(a, b) {
+  const x = siteOf(a), y = siteOf(b);
+  return Boolean(x && y) && (x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`));
+}
+
 export function isGoogleHost(raw) {
   const h = hostOf(raw);
   return h === 'google.com' || /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/.test(h) || h.endsWith('.googleusercontent.com');
@@ -272,6 +421,57 @@ export function publisherFromUrl(raw) {
     if (h === domain || h.endsWith(`.${domain}`)) return name;
   }
   return h;
+}
+
+// ── Related stories ──────────────────────────────────────────────────────────
+
+const BENGALURU_PLACE_NAMES = [
+  'bengaluru', 'bangalore', 'blr', 'whitefield', 'k\\.?\\s?r\\.?\\s?puram', 'indiranagar', 'marathahalli', 'varthur', 'sarjapur',
+  'domlur', 'mahadevapura', 'bellandur', 'hsr layout', 'koramangala', 'madiwala', 'hebbal', 'yelahanka', 'jakkur', 'peenya',
+  'yeshwant?h?pur', 'yeswanthpur', 'nagavara', 'banaswadi', 'hennur', 'jayanagar', 'j\\.?\\s?p\\.?\\s?nagar', 'bannerghatta',
+  'banashankari', 'btm layout', 'silk\\s?board', 'hosur road', 'electronic city', 'nice road', 'kengeri', 'mysuru road',
+  'mysore road', 'rajajinagar', 'vijayanagar', 'magadi road', 'jalahalli', 'malleswaram', 'basavanagudi', 'm\\.?\\s?g\\.? road',
+  'majestic', 'shivajinagar', 'ulsoor', 'outer ring road', 'airport road', 'tumakuru road', 'tumkur road', 'bellary road',
+  'ballari road', 'old madras road', 'kanakapura road', 'hoskote', 'devanahalli', 'nelamangala', 'anekal', 'attibele',
+  'doddaballapura?', 'bommanahalli', 'begur', 'hulimavu', 'chandapura', 'r\\.?\\s?t\\.?\\s?nagar', 'kalyan nagar',
+];
+const BENGALURU_PLACES = new RegExp(`\\b(?:${BENGALURU_PLACE_NAMES.join('|')})\\b|ಬೆಂಗಳೂರು`, 'i');
+
+/** The text names Bengaluru (in English or Kannada) or a well-known place in it. */
+export const mentionsBengaluru = (text) => BENGALURU_PLACES.test(String(text ?? ''));
+
+const RELATED_BLOCK = /<(?:div|section|aside|ul|ol|nav|footer)\b[^>]*\b(?:class|id)\s*=\s*["'][^"']*(?:related|also[-_\s]?read|read[-_\s]?more|more[-_\s]?(?:stories|news|from)|recommended)[^"']*["'][^>]*>/gi;
+const ALSO_READ = /\balso\s+read\b/gi;
+
+/**
+ * Same-site story links from "Also Read" lines (the first link after the
+ * words) and related-story blocks (a class or id saying related, also-read,
+ * read-more, more-stories or recommended): [{ url, text }], at most `max`.
+ * Only collects; the caller decides which are worth following.
+ */
+export function relatedLinks(html, pageUrl, max = 30) {
+  const s = String(html ?? '');
+  const self = urlKey(pageUrl);
+  const windows = [];
+  for (const m of s.matchAll(RELATED_BLOCK)) windows.push({ html: s.slice(m.index, m.index + 6000), first: false });
+  for (const m of s.matchAll(ALSO_READ)) windows.push({ html: s.slice(m.index, m.index + 600), first: true });
+  const out = new Map();
+  for (const w of windows.slice(0, 40)) {
+    for (const a of w.html.matchAll(ANCHOR)) {
+      const attrs = tagAttrs(a[1]);
+      const href = decodeEntities(attrs.href ?? '').trim();
+      let url = null;
+      try { url = href && !href.startsWith('#') ? normalizeUrl(new URL(href, pageUrl).toString()) : null; } catch { /* bad href */ }
+      const key = url && urlKey(url);
+      const text = (plainText(a[2]) || decodeEntities(attrs.title ?? '')).replace(/\s+/g, ' ').trim();
+      if (key && key !== self && !out.has(key) && sameSite(url, pageUrl) && text.length >= 15) {
+        out.set(key, { url, text: text.slice(0, 300) });
+        if (out.size >= max) return [...out.values()];
+      }
+      if (w.first) break;
+    }
+  }
+  return [...out.values()];
 }
 
 // ── Fetching ─────────────────────────────────────────────────────────────────

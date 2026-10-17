@@ -27,7 +27,8 @@ function makeAgent({ env = {}, store = makeStore(), fetchUrl = makeFeedFetch(), 
   const pipeline = createImportPipeline({ store, geocode, inferZone: () => 'South', sleep: async () => {}, logger: silentLogger });
   const agent = createNewsAgent({
     pipeline, store, dataDir, fetchUrl, aiFetch, budgetStatus,
-    env: { OPENROUTER_API_KEY: 'test-key', AGENT_QUERIES: 'Bengaluru accident|ಬೆಂಗಳೂರು ಅಪಘಾತ', ...env },
+    // Publisher feeds off unless a test turns them on, so the older tests count only GDELT and Google News requests.
+    env: { OPENROUTER_API_KEY: 'test-key', AGENT_QUERIES: 'Bengaluru accident|ಬೆಂಗಳೂರು ಅಪಘಾತ', AGENT_RSS_FEEDS: 'off', ...env },
     logger: silentLogger, sleep,
   });
   return { agent, store, fetchUrl, aiFetch, dataDir };

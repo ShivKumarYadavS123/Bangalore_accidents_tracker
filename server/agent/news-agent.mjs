@@ -3,11 +3,13 @@
  * road accidents and add them as PENDING accidents for an admin to approve.
  *
  * One run:
- *   a. SEARCH     Google News RSS (each query) + GDELT; merge, drop seen / stored / repeated stories
+ *   a. SEARCH     GDELT + publisher feeds + Google News RSS (each query) + related links kept
+ *                 from pages read last run; merge, drop seen / stored / repeated stories
  *   b. PRE-FILTER keyword check on the headline (free)
  *   c. TRIAGE     up to 30 headlines per AI call: which are a specific Bengaluru road crash?
- *   d. READ       resolve and fetch the article (max AGENT_MAX_READS_PER_RUN)
- *   e. IMPORT     extract + locate + dedupe + save as pending (pipeline.mjs)
+ *   d. READ       fetch the article (max AGENT_MAX_READS_PER_RUN); a Google News item is read
+ *                 through the same story's publisher link from GDELT or a feed when there is one
+ *   e. IMPORT     extract + ground + locate + dedupe + save as pending (pipeline.mjs)
  *   f. Every processed URL is remembered so it is never paid for twice.
  *      A failed save is not a verdict on the article: the extracted record is
  *      queued and only the save is retried next run (no AI call), up to 5 runs.
@@ -23,10 +25,11 @@ import path from 'path';
 import crypto from 'crypto';
 import { chatJSON, budgetStatus as llmBudgetStatus, ensureFreeModel } from '../ai/llm.mjs';
 import {
-  fetchCapped, googleNewsUrl, gdeltUrl, parseGoogleNewsRss, parseGdelt, parseQueries, isKannada,
-  normalizeUrl, urlKey, titleTokens, similarTitles, isGoogleHost, htmlToText, metaContent, publisherFromUrl,
+  fetchCapped, googleNewsUrl, gdeltUrl, parseGoogleNewsRss, parseGdelt, parsePublisherRss, parseQueries, parseFeedList, isKannada,
+  normalizeUrl, urlKey, titleTokens, similarTitles, isGoogleHost, htmlToText, pageMeta, jsonLdArticle, publisherFromUrl,
+  sameSite, siteOf, relatedLinks, mentionsBengaluru,
 } from './sources.mjs';
-import { looksLikeAccident, neutralise, istDate, AGENT_MARKER, STATUS_CHECK_PROBLEM } from './pipeline.mjs';
+import { looksLikeAccident, neutralise, istDate, addDays, AGENT_MARKER, STATUS_CHECK_PROBLEM, MAX_AGE_DAYS } from './pipeline.mjs';
 
 export const SITE_RESERVE = 10;
 export const TRIAGE_BATCH = 30;
@@ -55,6 +58,7 @@ const RUNS_MAX = 50;
 const ITEMS_MAX = 300;
 const LOG_MAX = 200;
 const QUEUE_MAX = 100;
+const RELATED_MAX = 30; // related links waiting for the next run
 const RECENT_TITLES_MAX = 1000;
 const WEEK_MS = 7 * 24 * 3600 * 1000;
 
@@ -75,6 +79,8 @@ export function agentConfig(env = process.env) {
     enabled: !/^(false|0|off|no)$/i.test(String(env.AGENT_ENABLED ?? 'true').trim()),
     intervalHours: Number.isFinite(hours) && hours > 0 ? Math.min(168, Math.max(1, hours)) : 3,
     queries: parseQueries(env.AGENT_QUERIES),
+    feeds: parseFeedList(env.AGENT_RSS_FEEDS),
+    maxRelated: int(env.AGENT_MAX_RELATED_PER_RUN, 3, 0, 10),
     maxReads: int(env.AGENT_MAX_READS_PER_RUN, 8, 1, 50),
     maxAiPerRun: int(env.AGENT_MAX_AI_CALLS_PER_RUN, 8, 1, 50),
     dailyAi: int(env.AGENT_DAILY_AI_BUDGET, 20, 0, 1000),
@@ -249,6 +255,8 @@ export function createNewsAgent({
     aiCalls: Number.isFinite(raw.aiCalls) ? raw.aiCalls : 0,
     lastRunAt: raw.lastRunAt || null,
     queue: Array.isArray(raw.queue) ? raw.queue.filter(x => x && x.key && x.url) : [],
+    // related-story links found on pages read in earlier runs; they join the next run's search results
+    related: Array.isArray(raw.related) ? raw.related.filter(x => x && typeof x.url === 'string' && typeof x.title === 'string') : [],
     recentTitles: Array.isArray(raw.recentTitles) ? raw.recentTitles.filter(x => x && typeof x.t === 'string') : [],
     // url key → { n: runs in a row where triage failed, at: last failure time }
     triageFails: raw.triageFails && typeof raw.triageFails === 'object' && !Array.isArray(raw.triageFails) ? raw.triageFails : {},
@@ -263,6 +271,7 @@ export function createNewsAgent({
 
   let running = null;
   let current = null;
+  let processedThisRun = new Set(); // url keys that got an outcome after the search step of the current run
   let timer = null;
   let nextRunAt = null;
   let started = false;
@@ -316,6 +325,7 @@ export function createNewsAgent({
     const cutoff = now() - WEEK_MS;
     state.recentTitles = state.recentTitles.filter(r => r.at >= cutoff).slice(-RECENT_TITLES_MAX);
     state.queue = state.queue.slice(-QUEUE_MAX);
+    state.related = state.related.filter(r => Date.parse(r.foundAt) >= cutoff).slice(-RELATED_MAX);
     const fails = Object.entries(state.triageFails).filter(([, v]) => v && Number.isFinite(v.n) && v.at >= cutoff);
     state.triageFails = Object.fromEntries(fails.slice(-2000));
     writeJson(files.state, state);
@@ -364,7 +374,8 @@ export function createNewsAgent({
     if (extra.deferred) run.counts.deferred++;
     else run.counts[status] = (run.counts[status] || 0) + 1;
     if (run.items.length >= ITEMS_MAX) { run.counts.itemsNotLogged++; return; }
-    const item = { title: c.title, url: c.url, publisher: c.publisher || c.domain || null, feed: c.source || null, step, status, reason };
+    const publisher = c.relatedFrom ? `related link from ${c.relatedFrom}` : (c.publisher || c.domain || null);
+    const item = { title: c.title, url: c.url, publisher, feed: c.source || null, step, status, reason };
     if (extra.id) item.id = extra.id;
     if (extra.link && extra.link !== c.url) item.link = extra.link;
     if (extra.deferred) item.deferred = true;
@@ -378,6 +389,10 @@ export function createNewsAgent({
     markSeen(c.key);
     delete state.triageFails[c.key];
     if (extra.link) markSeen(urlKey(extra.link));
+    if (step !== 'search') {
+      processedThisRun.add(c.key);
+      if (extra.link) processedThisRun.add(urlKey(extra.link));
+    }
     const tokens = c.tokens || titleTokens(c.title, c.publisher);
     if (tokens.length) state.recentTitles.push({ t: tokens.join(' '), title: String(c.title).slice(0, 160), at: now() });
   }
@@ -385,6 +400,13 @@ export function createNewsAgent({
   /** Not processed this run (budget, read limit, rate limit): logged, not remembered, retried later. */
   function defer(run, c, step, reason) {
     record(run, c, step, 'error', reason, { deferred: true });
+    // Search won't find a related link again, so one held back before triage waits with the others.
+    if (c.source === 'related' && step === 'triage') keepRelated(c);
+  }
+
+  function keepRelated({ key, url, title, relatedFrom, foundAt }) {
+    if (state.related.some(r => r.key === key)) return;
+    state.related.push({ key, url, title, from: relatedFrom || null, foundAt: foundAt || new Date(now()).toISOString() });
   }
 
   /**
@@ -394,8 +416,9 @@ export function createNewsAgent({
   function requeue(c, tries = c.tries || 0, { saveRetry = c.saveRetry || null, saveTries = c.saveTries || 0 } = {}) {
     if (state.queue.some(x => x.key === c.key)) return;
     state.queue.push({
-      key: c.key, url: c.url, title: c.title, publisher: c.publisher || null, domain: c.domain || null,
+      key: c.key, url: c.url, title: c.title, publisher: c.publisher || null, publisherUrl: c.publisherUrl || null, domain: c.domain || null,
       publishedAt: c.publishedAt || null, snippet: c.snippet || '', source: c.source || null,
+      ...(c.relatedFrom ? { relatedFrom: c.relatedFrom } : {}),
       triageReason: c.triageReason || '', tries, queuedAt: c.queuedAt || new Date(now()).toISOString(),
       ...(saveRetry ? { saveRetry, saveTries } : {}),
     });
@@ -419,7 +442,7 @@ export function createNewsAgent({
   // ── Steps ──────────────────────────────────────────────────────────────────
 
   /**
-   * One Google News feed. A 404 or 5xx is usually a passing hiccup: try the
+   * One Google News or publisher feed. A 404 or 5xx is usually a passing hiccup: try the
    * same feed once more after 3 s, then skip it for this run (shown in amber,
    * like a rate-limited GDELT, not as a failure). `name` keys run.sources;
    * `label` (default `name`) is what the log says, e.g. which edition.
@@ -495,9 +518,51 @@ export function createNewsAgent({
     return [];
   }
 
+  /**
+   * Publisher feeds (AGENT_RSS_FEEDS), fetched like Google News feeds. They have
+   * no date filter of their own, so items older than the run's window are left out.
+   */
+  async function searchFeeds(run) {
+    const out = [];
+    const cutoff = now() - run.days * 24 * 3600 * 1000;
+    const accept = 'application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5';
+    const names = new Set();
+    for (const feedUrl of cfg.feeds) {
+      await sleep(cfg.requestDelayMs);
+      const base = `Feed: ${publisherFromUrl(feedUrl)}`;
+      let name = base;
+      for (let n = 2; names.has(name); n++) name = `${base} #${n}`;
+      names.add(name);
+      const items = await fetchFeed(run, name, feedUrl, accept, (xml) => parsePublisherRss(xml, feedUrl));
+      const fresh = items.filter(it => !(Date.parse(it.publishedAt) < cutoff));
+      if (fresh.length < items.length) log(run, `SEARCH ${name}: ${items.length - fresh.length} older than ${run.days} day${run.days === 1 ? '' : 's'}, left out`);
+      out.push(...fresh);
+    }
+    return out;
+  }
+
+  /** Related-story links kept from pages read in earlier runs. */
+  function takeRelated(run) {
+    const items = state.related.filter(r => !seenSet.has(r.key)).map(r => ({
+      source: 'related', title: r.title, url: r.url, publisher: publisherFromUrl(r.url), publisherUrl: null,
+      domain: siteOf(r.url) || null, publishedAt: null, snippet: '', relatedFrom: r.from || publisherFromUrl(r.url), foundAt: r.foundAt,
+    }));
+    state.related = [];
+    if (items.length) {
+      run.sources['Related links'] = { ok: true, count: items.length };
+      log(run, `SEARCH Related links: ${items.length} from pages read in earlier runs`);
+    }
+    return items;
+  }
+
+  /**
+   * GDELT first, then publisher feeds: their links point straight at publishers,
+   * so they win near-identical headlines over Google News. `direct` is every
+   * GDELT and feed result, for finding a Google News item's publisher link.
+   */
   async function search(run) {
-    // GDELT first: its links point straight at publishers, so it wins near-identical headlines.
     const gdelt = await searchGdelt(run);
+    const feeds = await searchFeeds(run);
     const google = [];
     const accept = 'application/rss+xml, application/xml;q=0.9, */*;q=0.5';
     for (const query of cfg.queries) {
@@ -519,10 +584,12 @@ export function createNewsAgent({
       }
       google.push(...items);
     }
-    return [...gdelt, ...google];
+    const related = takeRelated(run);
+    return { merged: [...gdelt, ...feeds, ...google, ...related], direct: [...gdelt, ...feeds] };
   }
 
-  async function dedupe(run, merged, queued) {
+  /** `ctx` gets the stored link keys and this run's URL keys, so related links can skip both. */
+  async function dedupe(run, merged, queued, ctx = {}) {
     let stored = new Set();
     try { stored = await store.allLinkKeys(); }
     catch (e) { log(run, `SEARCH: could not load stored links (${short(e)}); the save step still checks every link`); }
@@ -547,6 +614,8 @@ export function createNewsAgent({
       out.push(c);
     }
     run.counts.new = out.length;
+    ctx.stored = stored;
+    ctx.keys = new Set([...runKeys, ...queuedKeys]);
     return out;
   }
 
@@ -563,13 +632,47 @@ export function createNewsAgent({
     return parseTriage(out.json, batch.length);
   }
 
+  /** GDELT and feed results as { url, key, site, publisher, tokens, source }, for findTwin. */
+  function twinIndex(direct) {
+    const out = [];
+    for (const it of direct) {
+      const url = normalizeUrl(it.url);
+      if (!url) continue;
+      const publisher = it.publisher || publisherFromUrl(url);
+      out.push({ url, key: urlKey(url), site: siteOf(url), publisher: String(publisher || '').toLowerCase(), tokens: titleTokens(it.title, publisher), source: it.source });
+    }
+    return out;
+  }
+
+  /**
+   * The same story from the same publisher among this run's direct links, for a
+   * Google News item (whose own link never reaches the publisher). Same
+   * publisher means the site of the feed's <source url>, or the same name.
+   */
+  function findTwin(item, twins) {
+    if (!isGoogleHost(item.url) || !twins.length) return null;
+    const name = String(item.publisher || '').toLowerCase();
+    if (!item.publisherUrl && !name) return null;
+    const tokens = titleTokens(item.title, item.publisher);
+    return twins.find(t => t.key !== item.key
+      && (sameSite(item.publisherUrl, t.url) || (name && name === t.publisher))
+      && similarTitles(tokens, t.tokens)) || null;
+  }
+
   /**
    * Resolve and read an article. Google News links are requested once to see
    * whether they redirect to a publisher; a Google page is never read or parsed
    * (title + snippet are used instead and the Google link is kept).
+   * A publisher page gives the body (JSON-LD articleBody when the page has one,
+   * so menus can't push the story out of what the AI reads), og:title, the
+   * description, the publish time and, unless the item is itself a related
+   * link, the page's related-story links.
    */
   async function readArticle(item) {
-    const headline = (note, link = item.url) => ({ link, text: [item.title, item.snippet].filter(Boolean).join('\n'), siteName: null, note });
+    const headline = (note, link = item.url, meta = {}) => ({
+      link, text: [item.title, item.snippet].filter(Boolean).join('\n'), siteName: null, note,
+      pageTitle: meta.title || null, description: meta.description || null, publishedAt: meta.publishedAt || null, related: [],
+    });
     let r;
     try {
       r = await fetchUrl(item.url, { maxBytes: 2 * 1024 * 1024, timeoutMs: 15000, accept: 'text/html,application/xhtml+xml', skipBodyIf: isGoogleHost });
@@ -581,9 +684,38 @@ export function createNewsAgent({
     if (isGoogleHost(finalUrl)) return headline('Google News link did not lead to the publisher, used the headline');
     if (!r.ok) return headline(`publisher returned HTTP ${r.status}, used the headline`, finalUrl);
     if (!/html/i.test(r.contentType || '')) return headline('not an HTML page, used the headline', finalUrl);
-    const text = htmlToText(r.text);
-    if (text.length < 200) return headline('article text too short, used the headline', finalUrl);
-    return { link: finalUrl, text, siteName: metaContent(r.text, 'og:site_name'), note: null };
+    const meta = pageMeta(r.text);
+    const ld = jsonLdArticle(r.text);
+    if (ld && !meta.publishedAt) meta.publishedAt = ld.publishedAt;
+    const text = ld ? ld.body : htmlToText(r.text);
+    if (text.length < 200) return headline('article text too short, used the headline', finalUrl, meta);
+    return {
+      link: finalUrl, text, siteName: meta.siteName, note: null,
+      pageTitle: meta.title, description: meta.description, publishedAt: meta.publishedAt,
+      related: cfg.maxRelated > 0 && item.source !== 'related' ? relatedLinks(r.text, finalUrl) : [],
+    };
+  }
+
+  /**
+   * Related-story links worth following from a page that was read: the link
+   * text reads like a crash and names Bengaluru or a place in it, and the link
+   * is new (not seen, not stored, not in this run). At most
+   * AGENT_MAX_RELATED_PER_RUN per run; they join the next run's search results.
+   */
+  function keepRelatedLinks(run, page, from, ctx) {
+    const kept = [];
+    for (const l of page.related || []) {
+      if (ctx.relatedThisRun >= cfg.maxRelated) break;
+      const key = urlKey(l.url);
+      if (!key || seenSet.has(key) || ctx.stored?.has(key) || ctx.keys?.has(key)) continue;
+      if (state.related.some(x => x.key === key) || state.queue.some(x => x.key === key)) continue;
+      if (!looksLikeAccident(l.text) || !mentionsBengaluru(l.text)) continue;
+      keepRelated({ key, url: l.url, title: l.text, relatedFrom: from });
+      ctx.keys?.add(key);
+      ctx.relatedThisRun++;
+      kept.push(l);
+    }
+    if (kept.length) log(run, `RELATED: ${kept.length} link${kept.length === 1 ? '' : 's'} from ${from} kept for the next run`);
   }
 
   async function execute(run) {
@@ -614,10 +746,16 @@ export function createNewsAgent({
       log(run, `Run started (${run.trigger}, last ${run.days} day${run.days === 1 ? '' : 's'}); AI calls used today ${day.aiCalls}/${cfg.dailyAi}`);
 
       // a. SEARCH
-      const merged = await search(run);
+      // "Already processed" for a publisher twin: seen before this run, stored, or finished in this run
+      // after the search step (a twin dropped at search as "same story" as a carried-over item is not).
+      const seenAtStart = new Set(seenSet);
+      processedThisRun = new Set();
+      const { merged, direct } = await search(run);
       run.counts.found = merged.length;
       const queued = takeQueue();
-      const candidates = await dedupe(run, merged, queued);
+      const ctx = { relatedThisRun: 0 };
+      const candidates = await dedupe(run, merged, queued, ctx);
+      const twins = twinIndex(direct);
       log(run, `SEARCH: ${merged.length} results, ${candidates.length} new (${run.counts.alreadySeen} seen before, ${run.counts.alreadyInDb} already stored, ${run.counts.duplicate} repeated stories)`);
 
       // b. PRE-FILTER
@@ -693,8 +831,8 @@ export function createNewsAgent({
       if (saveRetries.length) log(run, `SAVE: retrying ${saveRetries.length} earlier save(s), no AI call needed`);
       for (const item of saveRetries) {
         if (saveBlocked) { requeue(item); defer(run, item, 'save', STATUS_CHECK_REASON); continue; }
-        const { item: saved, data, loc, dateAssumed } = item.saveRetry;
-        const res = await pipeline.saveExtracted(saved, data, loc, { dateAssumed });
+        const { item: saved, data, loc, dateAssumed, placeUnchecked } = item.saveRetry;
+        const res = await pipeline.saveExtracted(saved, data, loc, { dateAssumed, placeUnchecked });
         if (res.saveFailed) { onSaveFailure(item, res, item.saveRetry); continue; }
         finish(run, item, res.step, res.status, res.reason, { id: res.id, link: res.link });
       }
@@ -704,6 +842,12 @@ export function createNewsAgent({
       const overflow = fresh.slice(cfg.maxReads);
       log(run, `READ: ${toRead.length} article(s) to read${overflow.length ? `, ${overflow.length} queued for the next run` : ''}`);
       for (const [idx, item] of toRead.entries()) {
+        // A Google News link never reaches the publisher: read the same story's direct link instead.
+        const twin = findTwin(item, twins);
+        if (twin && (seenAtStart.has(twin.key) || ctx.stored?.has(twin.key) || processedThisRun.has(twin.key))) {
+          finish(run, item, 'read', 'duplicate', `same story as ${twin.url} (already processed)`, { link: twin.url });
+          continue;
+        }
         if (saveBlocked) {
           requeue(item);
           defer(run, item, 'extract', STATUS_CHECK_REASON);
@@ -716,21 +860,32 @@ export function createNewsAgent({
           continue;
         }
         if (idx > 0) await sleep(cfg.requestDelayMs);
-        const page = await readArticle(item);
+        const page = await readArticle(twin ? { ...item, url: twin.url } : item);
         if (page.invalid) { finish(run, item, 'read', 'invalid_link', page.reason); continue; }
+        if (twin) log(run, `READ: "${String(item.title).slice(0, 80)}": read the publisher's link from ${twin.source === 'gdelt' ? 'GDELT' : 'its feed'} instead of Google News`);
+        const publishedAt = item.publishedAt || page.publishedAt || null;
+        const today = istDate(now());
+        // A related link has no date until its page is read: an old story costs no AI call.
+        if (!item.publishedAt && page.publishedAt && istDate(Date.parse(page.publishedAt)) < addDays(today, -MAX_AGE_DAYS)) {
+          finish(run, item, 'read', 'error', `article published ${istDate(Date.parse(page.publishedAt))}, older than ${MAX_AGE_DAYS} days`, { link: page.link });
+          continue;
+        }
+        if (page.related?.length) keepRelatedLinks(run, page, item.publisher || page.siteName || publisherFromUrl(page.link), ctx);
         const newsItem = {
           kind: 'news',
           title: item.title,
           link: page.link,
           altLinks: page.link !== item.url ? [item.url] : [],
-          publishedAt: item.publishedAt,
-          fallbackDate: Number.isFinite(Date.parse(item.publishedAt)) ? istDate(Date.parse(item.publishedAt)) : null,
+          publishedAt,
+          fallbackDate: Number.isFinite(Date.parse(publishedAt)) ? istDate(Date.parse(publishedAt)) : null,
           publisher: item.publisher || page.siteName || null,
           fallbackPublisher: publisherFromUrl(page.link),
           marker: AGENT_MARKER,
           titleStyle: 'severity',
         };
-        const res = await pipeline.importItem({ ...newsItem, text: page.text }, { llm: gate.call, models: cfg.models, today: istDate(now()) });
+        // The page's words go to the AI but are not kept with a queued save retry.
+        const pageWords = { text: page.text, pageTitle: page.pageTitle, description: page.description };
+        const res = await pipeline.importItem({ ...newsItem, ...pageWords }, { llm: gate.call, models: cfg.models, today });
         if (res.saveFailed) {
           // The article text isn't kept: the retry only needs the extracted fields and the location.
           onSaveFailure(item, res, { item: newsItem, ...res.retry });
@@ -744,7 +899,8 @@ export function createNewsAgent({
           if (blocked) stop('EXTRACT');
           continue;
         }
-        const reason = page.note && res.status !== 'duplicate' ? `${res.reason} (${page.note})` : res.reason;
+        const notes = [twin ? `publisher link from ${twin.source === 'gdelt' ? 'GDELT' : 'its feed'}` : null, page.note].filter(Boolean).join('; ');
+        const reason = notes && res.status !== 'duplicate' ? `${res.reason} (${notes})` : res.reason;
         finish(run, item, res.step, res.status, reason, { id: res.id, link: res.link });
         if (gate.rateLimited) stop('EXTRACT');
       }
@@ -847,7 +1003,10 @@ export function createNewsAgent({
       maxReadsPerRun: cfg.maxReads,
       siteAi: { ...budgetStatus(), reserve: SITE_RESERVE },
       queueLength: state.queue.length,
+      relatedWaiting: state.related.length,
       queries: cfg.queries,
+      feeds: cfg.feeds,
+      maxRelatedPerRun: cfg.maxRelated,
       models: cfg.models,
       lastRuns: runs.slice(0, 10).map(summarize),
     };

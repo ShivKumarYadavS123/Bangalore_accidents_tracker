@@ -17,6 +17,7 @@ import { createAiFeatures } from './ai/index.mjs';
 import { ensureFreeModel } from './ai/llm.mjs';
 import { createNewsFeatures } from './agent/index.mjs';
 import { createStatsStore, registerAdminStatsRoute } from './admin-stats.js';
+import { titleDateEdit } from './admin-accident-edit.js';
 import { resolveSupabaseConfig, parseTrustProxy } from './config.js';
 import { readActiveAccidents, appendPublicAccident } from './accident-json.js';
 
@@ -1160,6 +1161,11 @@ app.patch('/api/admin/accidents/:id', adminAuth, async (req, res) => {
       updates.zone = inferZone(area);
     }
 
+    // Title and accident date (date_raw follows the date, keeping its time): admin-accident-edit.js
+    const edit = await titleDateEdit(req.body, { id, supabase, q: pool ? q : null });
+    if (edit.error) return res.status(edit.status).json({ error: edit.error });
+    Object.assign(updates, edit.updates);
+
     if (!Object.keys(updates).length) return res.status(400).json({ error: 'Nothing to update' });
 
     // 1. Supabase update with native GeoJSON Point
@@ -1203,7 +1209,10 @@ app.patch('/api/admin/accidents/:id', adminAuth, async (req, res) => {
       location: updates.location,
       area: updates.area,
       zone: updates.zone,
-      status: updates.status
+      status: updates.status,
+      title: updates.title,
+      accident_date: updates.accident_date,
+      date_raw: updates.date_raw
     });
 
     res.json({
@@ -1595,7 +1604,7 @@ async function reverseGeocode(lat, lng) {
 
 // ── JSON Sync Helpers ──────────────────────────────────────────────────────
 
-function syncPatchToJson(id, { lat, lng, location, area, zone, status }) {
+function syncPatchToJson(id, { lat, lng, location, area, zone, status, title, accident_date, date_raw }) {
   try {
     if (!fs.existsSync(JSON_PATH)) return;
     const data = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
@@ -1612,6 +1621,13 @@ function syncPatchToJson(id, { lat, lng, location, area, zone, status }) {
       item.zone = zone || inferZone(area);
     }
     if (status !== undefined) item.status = status;
+    if (title !== undefined) item.title = title;
+    if (accident_date !== undefined) {
+      // Older rows in the file use "date"; rows added since use the database names.
+      if ('accident_date' in item) item.accident_date = accident_date;
+      if ('date' in item || !('accident_date' in item)) item.date = accident_date;
+      if (date_raw !== undefined && 'date_raw' in item) item.date_raw = date_raw;
+    }
     fs.writeFileSync(JSON_PATH, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) { console.error('JSON sync patch error:', e.message); }
 }

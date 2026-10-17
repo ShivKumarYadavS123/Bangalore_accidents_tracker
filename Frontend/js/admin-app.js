@@ -10,6 +10,7 @@
   let editMap  = null;
   let editMarker = null;
   let editingId  = null;
+  let editOriginal = { title: '', date: '' }; // title and date when the Edit modal opened
   let deleteId   = null;
   let mapboxToken = '';
   let lastRows   = [];   // most recently loaded table rows
@@ -479,7 +480,7 @@
         </td>
         <td>
           <div class="action-btns">
-            <button class="btn-edit" data-action="edit" data-id="${esc(r.id)}" data-row='${jsonAttr({id:r.id,title:r.title,link:r.link||'',lat:r.lat||'',lng:r.lng||'',location:r.location||'',area:r.area||''})}'> Edit</button>
+            <button class="btn-edit" data-action="edit" data-id="${esc(r.id)}" data-row='${jsonAttr({id:r.id,title:r.title,date:r.date||'',link:r.link||'',lat:r.lat||'',lng:r.lng||'',location:r.location||'',area:r.area||''})}'> Edit</button>
             <button class="btn-del"  data-action="delete" data-id="${esc(r.id)}" data-title="${esc(r.title)}"> Delete</button>
             ${pendingBtns}
           </div>
@@ -582,6 +583,13 @@
     document.getElementById('edit-location').value = row.location || '';
     document.getElementById('edit-area').value = row.area || '';
 
+    // Title and accident date: only sent on save when the admin changes them.
+    editOriginal = { title: row.title || '', date: String(row.date || '').slice(0, 10) };
+    document.getElementById('edit-title').value = editOriginal.title;
+    const dateInput = document.getElementById('edit-date');
+    dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(editOriginal.date) ? editOriginal.date : '';
+    dateInput.max = todayIst();
+
     const linkEl = document.getElementById('modal-link');
     const linkOpen = document.getElementById('modal-link-open');
     linkEl.value = row.link || '';
@@ -656,6 +664,11 @@
   function closeEdit() {
     document.getElementById('edit-modal').hidden = true;
     editingId = null;
+  }
+
+  /** Today's date in India; the server refuses accident dates after it. */
+  function todayIst() {
+    return new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
   }
 
   // ── Map View: drag pins to reposition accident coordinates ───────────────
@@ -1042,8 +1055,27 @@
     const lng = parseFloat(document.getElementById('edit-lng').value);
     const location = document.getElementById('edit-location').value.trim();
     const area = document.getElementById('edit-area').value.trim();
+    const title = document.getElementById('edit-title').value.replace(/\s+/g, ' ').trim();
+    const date = document.getElementById('edit-date').value;
     const errEl = document.getElementById('modal-error');
     errEl.hidden = true;
+
+    // Title and date go only when changed (the server checks them again).
+    const extra = {};
+    if (title !== editOriginal.title.replace(/\s+/g, ' ').trim()) {
+      if (title.length < 5 || title.length > 200) {
+        errEl.textContent = 'Title must be 5 to 200 characters.';
+        errEl.hidden = false; return;
+      }
+      extra.title = title;
+    }
+    if (date && date !== editOriginal.date) {
+      if (date > todayIst()) {
+        errEl.textContent = 'Accident date cannot be in the future.';
+        errEl.hidden = false; return;
+      }
+      extra.accident_date = date;
+    }
 
     if (isNaN(lat) || isNaN(lng)) {
       errEl.textContent = 'Please enter valid latitude and longitude, or click on the map.';
@@ -1058,11 +1090,16 @@
     try {
       const r = await authenticatedFetch(`${API}/api/admin/accidents/${encodeURIComponent(editingId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ lat, lng, location, area }),
+        body: JSON.stringify({ lat, lng, location, area, ...extra }),
       });
       if (r.status === 401) return; // Handled by authenticatedFetch
       if (!r.ok) throw new Error((await r.json()).error);
       closeEdit();
+      if (extra.title || extra.accident_date) {
+        // Title and date show in several places (row, Review data, pins): reload the page of rows.
+        loadData(curPage);
+        return;
+      }
       updateRowInTable(editingId, lat, lng, location, area);
       const mr = allMapRows.find(m => String(m.id) === String(editingId));
       if (mr) { mr.lat = lat; mr.lng = lng; mr.location = location; mr.area = area; }
@@ -1385,7 +1422,7 @@
     // Save button in edit modal
     const modalSave = document.getElementById('modal-save');
     if (modalSave) {
-      modalSave.title = 'Save Coordinates (Ctrl+S)';
+      modalSave.title = 'Save Changes (Ctrl+S)';
     }
 
     // Cancel/Close buttons in edit modal
@@ -1629,6 +1666,8 @@
         lng: document.getElementById('edit-lng').value,
         location: document.getElementById('edit-location').value,
         area: document.getElementById('edit-area').value,
+        title: document.getElementById('edit-title').value,
+        date: document.getElementById('edit-date').value,
       };
     }
     // Save add modal state
